@@ -35,8 +35,8 @@ def try_collecting_player_data():
             print(f"Player ID: {player_id}, Season: {season_str}, Number of games: {season_logs_df.shape[0]}")
             all_player_logs.append(season_logs_df)
             player_logs.append(season_logs_df)
-            # Sleep for a random amount of time between 1 and 2 seconds to avoid rate limiting
-            time.sleep(random.uniform(1, 2))
+            # Sleep for a random amount of time between 0.1 and 0.5 seconds to avoid rate limiting
+            time.sleep(random.uniform(0.1, 0.5))
 
         # Save the logs for each player to a CSV file, in case the script is interrupted
         player_logs_df = pd.concat(player_logs, ignore_index=True)
