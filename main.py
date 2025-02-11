@@ -56,6 +56,7 @@ if __name__ == "__main__":
         player_hustle_stats_df = player_hustle_stats_df[['CONTESTED_SHOTS_3PT', 'PLAYER_NAME']]
         player_hustle_stats_df['SEASON'] = year
         contested_df = pd.concat([contested_df, player_hustle_stats_df], ignore_index=True)
+        print(f"Dataframe for year {year} has shape {player_hustle_stats_df.shape}")
 
         # Do the same for the team hustle stats
         teams_hustle_stats = leaguehustlestatsteam.LeagueHustleStatsTeam(
@@ -63,9 +64,10 @@ if __name__ == "__main__":
         )
         team_hustle_stats_df = teams_hustle_stats.get_data_frames()[0]
         # Keep the CONTESTED_SHOTS_3PT and PLAYER_NAME columns
-        team_hustle_stats_df = team_hustle_stats_df[['CONTESTED_SHOTS_3PT', 'PLAYER_NAME']]
+        team_hustle_stats_df = team_hustle_stats_df[['CONTESTED_SHOTS_3PT', 'TEAM_NAME']]
         team_hustle_stats_df['SEASON'] = year
         contested_df = pd.concat([contested_df, team_hustle_stats_df], ignore_index=True)
+        print(f"Dataframe for year {year} has shape {team_hustle_stats_df.shape}")
 
         # Sleep for a random time between 1 and 5 seconds
         time.sleep(random.randint(1, 5))
