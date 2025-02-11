@@ -14,6 +14,8 @@ if __name__ == "__main__":
     for year in range(2014, 2025):
         df = pd.read_csv(f"nba_data/shotdetail_{year}.csv")
         print(f"Dataframe for year {year} has shape {df.shape}")
+        # filter out the non 3pt shots
+        df = df[df['SHOT_TYPE'] == '3PT Field Goal']
         # Here we aggregate the dataframe to calculate the number of shots made and missed by each player
         df_p = df.groupby('PLAYER_ID').agg({'SHOT_MADE_FLAG': 'sum', 'SHOT_ATTEMPTED_FLAG': 'sum'}).reset_index()
         df_p['SEASON'] = year
