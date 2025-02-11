@@ -1,12 +1,21 @@
 from nba_api.stats.endpoints import playergamelog
 import pandas as pd
-from nba_api.stats.static import players
+from nba_api.stats.static import players, teams
 import time
 import random
+from nba_api.stats.endpoints import playerdashptshots, leaguehustlestatsplayer, leaguehustlestatsteam
 
 
 # Run the main function
 if __name__ == "__main__":
+    # Get the list of all players
+    player_list = players.get_players()
+    pd.DataFrame(player_list).to_csv('all_players.csv', index=False)
+
+    # Get the list of all teams
+    team_list = teams.get_teams()
+    pd.DataFrame(team_list).to_csv('all_teams.csv', index=False)
+
     # Data is downloaded from the https://github.com/shufinskiy/nba_data as of 2025-02-11
 
     # For all the data in nba, we read all shotdetail_<year> csv into a dataframe
@@ -34,3 +43,32 @@ if __name__ == "__main__":
 
     # Save the aggregated dataframe to a CSV file
     full_df.to_csv('x_shot_summary_2014_2024.csv', index=False)
+
+    # The repo above does not provide the contested data, so we need to get it from the nba_api
+    contested_df = pd.DataFrame()
+    for year in range(2014, 2025):
+        # Get the player hustle stats for the year
+        player_hustle_stats = leaguehustlestatsplayer.LeagueHustleStatsPlayer(
+            season=str(year) + "-" + str(year + 1)[2:]
+        )
+        player_hustle_stats_df = player_hustle_stats.get_data_frames()[0]
+        # Keep the CONTESTED_SHOTS_3PT and PLAYER_NAME columns
+        player_hustle_stats_df = player_hustle_stats_df[['CONTESTED_SHOTS_3PT', 'PLAYER_NAME']]
+        player_hustle_stats_df['SEASON'] = year
+        contested_df = pd.concat([contested_df, player_hustle_stats_df], ignore_index=True)
+
+        # Do the same for the team hustle stats
+        teams_hustle_stats = leaguehustlestatsteam.LeagueHustleStatsTeam(
+            season=str(year) + "-" + str(year + 1)[2:]
+        )
+        team_hustle_stats_df = teams_hustle_stats.get_data_frames()[0]
+        # Keep the CONTESTED_SHOTS_3PT and PLAYER_NAME columns
+        team_hustle_stats_df = team_hustle_stats_df[['CONTESTED_SHOTS_3PT', 'PLAYER_NAME']]
+        team_hustle_stats_df['SEASON'] = year
+        contested_df = pd.concat([contested_df, team_hustle_stats_df], ignore_index=True)
+
+        # Sleep for a random time between 1 and 5 seconds
+        time.sleep(random.randint(1, 5))
+
+    # Save the contested shots dataframe to a CSV file
+    contested_df.to_csv('contested_shots_2014_2024.csv', index=False)    
