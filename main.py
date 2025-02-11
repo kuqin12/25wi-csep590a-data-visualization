@@ -67,4 +67,4 @@ if __name__ == "__main__":
         except Exception as e:
             print(e)
             print("Error collecting data, trying again...")
-            time.sleep(5)
+            time.sleep(random.uniform(5, 10))
