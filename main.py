@@ -5,6 +5,7 @@ import time
 import random
 from nba_api.stats.endpoints import playerdashptshots, leaguehustlestatsplayer, leaguehustlestatsteam
 import get_nba_data
+import os
 
 
 # Run the main function
@@ -81,3 +82,6 @@ if __name__ == "__main__":
     # Save the contested shots dataframe to a CSV file
     if not os.path.exists('contested_shots_2014_2024.csv'):
         contested_df.to_csv('contested_shots_2014_2024.csv', index=False)    
+
+    from nbaHeadshots import getHeadshotById
+    getHeadshotById(2544, saveFolder="saveHere/", fileName="lebron.jpg")
