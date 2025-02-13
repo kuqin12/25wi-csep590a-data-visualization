@@ -4,19 +4,24 @@ from nba_api.stats.static import players, teams
 import time
 import random
 from nba_api.stats.endpoints import playerdashptshots, leaguehustlestatsplayer, leaguehustlestatsteam
+import get_nba_data
 
 
 # Run the main function
 if __name__ == "__main__":
     # Get the list of all players
     player_list = players.get_players()
-    pd.DataFrame(player_list).to_csv('all_players.csv', index=False)
+    if not os.path.exists('all_players.csv'):
+        pd.DataFrame(player_list).to_csv('all_players.csv', index=False)
 
     # Get the list of all teams
     team_list = teams.get_teams()
-    pd.DataFrame(team_list).to_csv('all_teams.csv', index=False)
+    if not os.path.exists('all_teams.csv'):
+        pd.DataFrame(team_list).to_csv('all_teams.csv', index=False)
 
     # Data is downloaded from the https://github.com/shufinskiy/nba_data as of 2025-02-11
+    if not os.path.exists('nba_data'):
+        get_nba_data.get_nba_data(path='nba_data', seasons=range(2014, 2025), data=['shotdetail'], untar=True)
 
     # For all the data in nba, we read all shotdetail_<year> csv into a dataframe
     full_df = pd.DataFrame()
@@ -42,7 +47,8 @@ if __name__ == "__main__":
         full_df = pd.concat([full_df, df_t], ignore_index=True)
 
     # Save the aggregated dataframe to a CSV file
-    full_df.to_csv('x_shot_summary_2014_2024.csv', index=False)
+    if not os.path.exists('x_shot_summary_2014_2024.csv'):
+        full_df.to_csv('x_shot_summary_2014_2024.csv', index=False)
 
     # The repo above does not provide the contested data, so we need to get it from the nba_api
     contested_df = pd.DataFrame()
@@ -71,4 +77,5 @@ if __name__ == "__main__":
         time.sleep(random.randint(1, 5))
 
     # Save the contested shots dataframe to a CSV file
-    contested_df.to_csv('contested_shots_2014_2024.csv', index=False)    
+    if not os.path.exists('contested_shots_2014_2024.csv'):
+        contested_df.to_csv('contested_shots_2014_2024.csv', index=False)    
