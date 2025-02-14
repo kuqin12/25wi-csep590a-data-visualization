@@ -71,9 +71,9 @@ if __name__ == "__main__":
         )
         team_hustle_stats_df = teams_hustle_stats.get_data_frames()[0]
         # Keep the CONTESTED_SHOTS_3PT and PLAYER_NAME columns
-        team_hustle_stats_df = team_hustle_stats_df[['CONTESTED_SHOTS_3PT', 'TEAM_NAME']]
+        team_hustle_stats_df = team_hustle_stats_df[['CONTESTED_SHOTS_3PT', 'TEAM_ID']]
         team_hustle_stats_df['SEASON'] = year
-        team_hustle_stats_df.rename(columns={'TEAM_NAME': 'X_ID'}, inplace=True)
+        team_hustle_stats_df.rename(columns={'TEAM_ID': 'X_ID'}, inplace=True)
         contested_df = pd.concat([contested_df, team_hustle_stats_df], ignore_index=True)
         print(f"Dataframe for year {year} has shape {team_hustle_stats_df.shape}")
 
