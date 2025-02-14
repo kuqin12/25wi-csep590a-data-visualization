@@ -92,7 +92,7 @@ if __name__ == "__main__":
     df = pd.merge(full_df, contested_df, on=['X_ID', 'SEASON'], how='outer')
 
     # Rename the columns
-    df.rename(columns={'SHOT_MADE_FLAG': '3PT_MADE', 'SHOT_ATTEMPTED_FLAG': '3PT_ATTEMPTED', 'CONTESTED_SHOTS_3PT': '3PT_CONTESTED'}, inplace=True)
+    df.rename(columns={'SHOT_MADE_FLAG': 'MADE_3PT', 'SHOT_ATTEMPTED_FLAG': 'ATTEMPTED_3PT', 'CONTESTED_SHOTS_3PT': 'CONTESTED_3PT'}, inplace=True)
 
     # Test to see if the data has any missing values
     # This might be because the player or team did not shot any 3pt shots
