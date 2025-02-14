@@ -1,10 +1,10 @@
-from nba_api.stats.endpoints import playergamelog
 import pandas as pd
 from nba_api.stats.static import players, teams
 import time
 import random
-from nba_api.stats.endpoints import playerdashptshots, leaguehustlestatsplayer, leaguehustlestatsteam
+from nba_api.stats.endpoints import leaguehustlestatsplayer, leaguehustlestatsteam
 import get_nba_data
+import os
 
 
 # Run the main function
@@ -59,8 +59,9 @@ if __name__ == "__main__":
         )
         player_hustle_stats_df = player_hustle_stats.get_data_frames()[0]
         # Keep the CONTESTED_SHOTS_3PT and PLAYER_NAME columns
-        player_hustle_stats_df = player_hustle_stats_df[['CONTESTED_SHOTS_3PT', 'PLAYER_NAME']]
+        player_hustle_stats_df = player_hustle_stats_df[['CONTESTED_SHOTS_3PT', 'PLAYER_ID']]
         player_hustle_stats_df['SEASON'] = year
+        player_hustle_stats_df.rename(columns={'PLAYER_ID': 'X_ID'}, inplace=True)
         contested_df = pd.concat([contested_df, player_hustle_stats_df], ignore_index=True)
         print(f"Dataframe for year {year} has shape {player_hustle_stats_df.shape}")
 
@@ -72,6 +73,7 @@ if __name__ == "__main__":
         # Keep the CONTESTED_SHOTS_3PT and PLAYER_NAME columns
         team_hustle_stats_df = team_hustle_stats_df[['CONTESTED_SHOTS_3PT', 'TEAM_NAME']]
         team_hustle_stats_df['SEASON'] = year
+        team_hustle_stats_df.rename(columns={'TEAM_NAME': 'X_ID'}, inplace=True)
         contested_df = pd.concat([contested_df, team_hustle_stats_df], ignore_index=True)
         print(f"Dataframe for year {year} has shape {team_hustle_stats_df.shape}")
 
