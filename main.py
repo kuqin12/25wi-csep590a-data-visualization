@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     # Data is downloaded from the https://github.com/shufinskiy/nba_data as of 2025-02-11
     if not os.path.exists('nba_data'):
-        get_nba_data.get_nba_data(path='nba_data', seasons=range(2014, 2025), data=['shotdetail'], untar=True)
+        get_nba_data.load_nba_data(path='nba_data', seasons=range(2014, 2025), data=['shotdetail'], untar=True)
 
     # For all the data in nba, we read all shotdetail_<year> csv into a dataframe
     full_df = pd.DataFrame()
@@ -82,4 +82,4 @@ if __name__ == "__main__":
 
     # Save the contested shots dataframe to a CSV file
     if not os.path.exists('contested_shots_2014_2024.csv'):
-        contested_df.to_csv('contested_shots_2014_2024.csv', index=False)    
+        contested_df.to_csv('contested_shots_2014_2024.csv', index=False)
