@@ -10,7 +10,7 @@ import h3
 
 
 def lat_lon_to_h3(lat, lon, resolution):
-    return h3.geo_to_h3(lat, lon, resolution)
+    return h3.latlng_to_cell(lat, lon, resolution)
 
 
 # Run the main function
@@ -40,7 +40,8 @@ if __name__ == "__main__":
 
             # Gather the location of the shot
             loc_df = pd.DataFrame()
-            loc_df['SHOT_LOCATION'] = df['LOC_X'].astype(str) + ',' + df['LOC_Y'].astype(str)
+            loc_df['LOC_X'] = df['LOC_X'].astype(int)
+            loc_df['LOC_Y'] = df['LOC_Y'].astype(int)
             # Gather the made and attempted flags
             loc_df['SHOT_MADE_FLAG'] = df['SHOT_MADE_FLAG'].astype(int)
             loc_df['SHOT_ATTEMPTED_FLAG'] = df['SHOT_ATTEMPTED_FLAG'].astype(int)
@@ -74,10 +75,17 @@ if __name__ == "__main__":
 
         full_df.to_csv('x_shot_summary_2014_2024.csv', index=False)
 
-        resolution = 10  # Adjust this based on your granularity needs
-        full_loc_df['h3_index'] = full_loc_df.apply(lambda row: lat_lon_to_h3(row['SHOT_LOCATION'].split(',')[0], row['SHOT_LOCATION'].split(',')[1], resolution), axis=1)
-        binned_data = full_loc_df.groupby('h3_index').size().reset_index(name='count')
-        binned_data.to_csv('x_shot_summary_2014_2024_loc_binned.csv', index=False)
+        # full_loc_df['LOC_H3'] = full_loc_df.apply(lambda row: lat_lon_to_h3(row['LOC_X'], row['LOC_Y'], 8), axis=1)
+        # grouped = full_loc_df.groupby(['LOC_H3', 'SEASON', 'SHOT_TYPE']).agg({'SHOT_MADE_FLAG': 'sum', 'SHOT_ATTEMPTED_FLAG': 'sum'}).reset_index()
+        # grouped['GEO'] = grouped['LOC_H3'].apply(lambda x: h3.cell_to_boundary(x))
+        # gdf = gpd.GeoDataFrame(grouped[['LOC_H3', 'GEO']], geometry=gpd.points_from_xy(grouped['GEO'].apply(lambda x: x[0][0]), grouped['GEO'].apply(lambda x: x[0][1])))
+        # # I think we only need one geometry column, so we can drop the LOC_H3 column
+        # gdf.to_file('x_shot_summary_2014_2024_loc.geojson', driver='GeoJSON')
+        # # save the grouped dataframe to a csv file
+        # grouped.drop(columns=['GEO'], inplace=True)
+        # grouped.to_csv('x_shot_summary_2014_2024_loc.csv', index=False)
+        # save the full_loc_df to a csv file
+        full_loc_df.to_csv('x_shot_summary_2014_2024_loc.csv', index=False)
     else:
         full_df = pd.read_csv('x_shot_summary_2014_2024.csv')
         full_loc_df = pd.read_csv('x_shot_summary_2014_2024_loc.csv')
