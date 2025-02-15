@@ -5,6 +5,12 @@ import random
 from nba_api.stats.endpoints import leaguehustlestatsplayer, leaguehustlestatsteam
 import get_nba_data
 import os
+import geopandas as gpd
+import h3
+
+
+def lat_lon_to_h3(lat, lon, resolution):
+    return h3.geo_to_h3(lat, lon, resolution)
 
 
 # Run the main function
@@ -67,7 +73,11 @@ if __name__ == "__main__":
             full_df = pd.concat([full_df, df_t], ignore_index=True)
 
         full_df.to_csv('x_shot_summary_2014_2024.csv', index=False)
-        full_loc_df.to_csv('x_shot_summary_2014_2024_loc.csv', index=False)
+
+        resolution = 10  # Adjust this based on your granularity needs
+        full_loc_df['h3_index'] = full_loc_df.apply(lambda row: lat_lon_to_h3(row['SHOT_LOCATION'].split(',')[0], row['SHOT_LOCATION'].split(',')[1], resolution), axis=1)
+        binned_data = full_loc_df.groupby('h3_index').size().reset_index(name='count')
+        binned_data.to_csv('x_shot_summary_2014_2024_loc_binned.csv', index=False)
     else:
         full_df = pd.read_csv('x_shot_summary_2014_2024.csv')
         full_loc_df = pd.read_csv('x_shot_summary_2014_2024_loc.csv')
