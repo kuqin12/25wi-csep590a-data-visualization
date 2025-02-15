@@ -20,16 +20,34 @@ if __name__ == "__main__":
         pd.DataFrame(team_list).to_csv('all_teams.csv', index=False)
 
     # Save the aggregated dataframe to a CSV file
-    if not os.path.exists('x_shot_summary_2014_2024.csv'):
+    if not os.path.exists('x_shot_summary_2014_2024.csv') or not os.path.exists('x_shot_summary_2014_2024_loc.csv'):
         # Data is downloaded from the https://github.com/shufinskiy/nba_data as of 2025-02-11
         if not os.path.exists('nba_data'):
             get_nba_data.load_nba_data(path='nba_data', seasons=range(2014, 2025), data=['shotdetail'], untar=True)
 
         # For all the data in nba, we read all shotdetail_<year> csv into a dataframe
         full_df = pd.DataFrame()
+        full_loc_df = pd.DataFrame()
         for year in range(2014, 2025):
             df = pd.read_csv(f"nba_data/shotdetail_{year}.csv")
             print(f"Dataframe for year {year} has shape {df.shape}")
+
+            # Gather the location of the shot
+            loc_df = pd.DataFrame()
+            loc_df['SHOT_LOCATION'] = df['LOC_X'].astype(str) + ',' + df['LOC_Y'].astype(str)
+            # Gather the made and attempted flags
+            loc_df['SHOT_MADE_FLAG'] = df['SHOT_MADE_FLAG'].astype(int)
+            loc_df['SHOT_ATTEMPTED_FLAG'] = df['SHOT_ATTEMPTED_FLAG'].astype(int)
+            # Gather the player id
+            loc_df['PLAYER_ID'] = df['PLAYER_ID'].astype(int)
+            # Gather the team id
+            loc_df['TEAM_ID'] = df['TEAM_ID'].astype(int)
+            # Gather the season
+            loc_df['SEASON'] = year
+            # Gather the shot type
+            loc_df['SHOT_TYPE'] = df['SHOT_TYPE'].astype(str)
+            full_loc_df = pd.concat([full_loc_df, loc_df], ignore_index=True)
+
             # filter out the non 3pt shots
             df = df[df['SHOT_TYPE'] == '3PT Field Goal']
             # Here we aggregate the dataframe to calculate the number of shots made and missed by each player
@@ -49,8 +67,10 @@ if __name__ == "__main__":
             full_df = pd.concat([full_df, df_t], ignore_index=True)
 
         full_df.to_csv('x_shot_summary_2014_2024.csv', index=False)
+        full_loc_df.to_csv('x_shot_summary_2014_2024_loc.csv', index=False)
     else:
         full_df = pd.read_csv('x_shot_summary_2014_2024.csv')
+        full_loc_df = pd.read_csv('x_shot_summary_2014_2024_loc.csv')
 
     # The repo above does not provide the contested data, so we need to get it from the nba_api
     contested_df = pd.DataFrame()
