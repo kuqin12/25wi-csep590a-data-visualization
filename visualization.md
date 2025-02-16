@@ -6,8 +6,6 @@ toc: false
 # Interactive Visualization Submission
 
 ```js echo
-import { hexbin as d3Hexbin } from "d3-hexbin";
-
 async function loadData() {
 	const BASE_URL =
 		"https://media.githubusercontent.com/media/kuqin12/25wi-csep590a-data-visualization/refs/heads/main/";
@@ -49,9 +47,14 @@ const SEARCH_WIDTH = VIEW_WIDTH * 0.3;
 const SEARCH_HEIGHT = 200;
 const AUTO_WIDTH = SEARCH_WIDTH;
 const AUTO_HEIGHT = VIEW_HEIGHT - SEARCH_HEIGHT;
+const USABLE_WIDTH = Math.min(500, COURT_WIDTH);
+const COURT_MARGINS = 20;
+const COURT_HEIGHT = (USABLE_WIDTH / 50) * 47;
 ```
 
 ```js echo
+import { hexbin as d3Hexbin } from "d3-hexbin";
+
 document.addEventListener("DOMContentLoaded", init);
 
 function init() {
@@ -60,6 +63,7 @@ function init() {
 	drawSelector(svg);
 	drawShotChart(svg, window.data.shots_contested);
 	drawEfficiencyChart(svg, window.data.shots_contested);
+	drawShotHeatmap(svg, window.data.shots_loc);
 
 	display(svg.node());
 }
@@ -206,6 +210,21 @@ function drawShotChart(svg, shotData) {
 	}
 }
 
+function drawShotHeatmap(svg, shotsLocData) {
+	const heatmap = svg
+		.append("g")
+		.attr("id", "court_chart")
+		.attr(
+			"transform",
+			`translate(${
+				DEFAULT_CHART_WIDTH + MARGIN.left + MARGIN.left
+			}, ${DEFAULT_CHART_HEIGHT})`
+		);
+
+	drawCourtOutline(heatmap);
+	drawHeatmap(heatmap, shotsLocData);
+}
+
 function drawEfficiencyChart(svg, efficiencyData) {
 	const efficiencyChart = svg
 		.append("g")
@@ -263,6 +282,265 @@ function drawEfficiencyChart(svg, efficiencyData) {
 		"Shot Efficiency",
 		"Contest Percentage"
 	);
+}
+
+function drawHeatmap(court, shotsLocData) {
+	const X_NBA_DATA = d3
+		.scaleLinear()
+		.range([0, USABLE_WIDTH - COURT_MARGINS * 2])
+		.domain([-250, 250]);
+	const Y_NBA_DATA = d3
+		.scaleLinear()
+		.range([0, (COURT_HEIGHT - COURT_MARGINS * 2) * 2])
+		.domain([-52, 888]);
+	const COURT_EXTENT = [
+		[0, 0],
+		[USABLE_WIDTH - COURT_MARGINS * 2, (COURT_HEIGHT - COURT_MARGINS * 2) * 2],
+	];
+
+	const hexbin = d3Hexbin()
+		.x((d) => X_NBA_DATA(d.LOC_X))
+		.y((d) => Y_NBA_DATA(d.LOC_Y))
+		.extent(COURT_EXTENT)
+		.radius(4);
+	const bins = hexbin(
+		shotsLocData
+			.filter((d) => d.LOC_Y < 418)
+			.map((d) => ({
+				LOC_X: +d.LOC_X,
+				LOC_Y: +d.LOC_Y,
+				MADE: d.SHOT_MADE_FLAG,
+				ATTEMPTED: d.SHOT_ATTEMPTED_FLAG,
+			}))
+	);
+
+	bins.forEach((d) => {
+		d.total_made = d3.sum(d, (e) => e.MADE);
+		d.pct = d.total_made / d.length;
+	});
+
+	const maxPct = d3.max(bins, (d) => d.pct);
+	const minPct = d3.min(bins, (d) => d.pct);
+	const colorScale = d3
+		.scaleSequential(d3.interpolateRdYlBu)
+		.domain([minPct, maxPct]);
+
+	const hexagons = court
+		.append("g")
+		.selectAll("path")
+		.data(bins)
+		.enter()
+		.append("path")
+		.attr("class", "hexagon")
+		.attr("d", hexbin.hexagon())
+		.attr("transform", (d) => `translate(${d.x},${d.y})`)
+		.attr("fill", (d) => colorScale(d.pct))
+		.attr("stroke", "white")
+		.attr("opacity", 0.7)
+		.on("mouseover", function (event, d) {
+			d3.select(this).attr("stroke", "#333");
+		})
+		.on("mouseout", function (d) {
+			d3.select(this).attr("stroke", "white");
+		});
+
+	hexagons
+		.append("title")
+		.text(
+			(d) =>
+				`Shot Percentage: ${(d.pct * 100).toFixed(2)}%\nAttempts: ${d.length}`
+		);
+	
+	drawHeatmapLegend(court, colorScale, minPct, maxPct);
+}
+
+function drawHeatmapLegend(svg, colorScale, minPct, maxPct) {
+    const LEGEND_WIDTH = 200;
+    const LEGEND_HEIGHT = 20;
+    
+    const legendScale = d3.scaleLinear()
+        .domain([minPct, maxPct])
+        .range([0, LEGEND_WIDTH]);
+
+    const legend = svg.append("g")
+        .attr("transform", `translate(${DEFAULT_CHART_WIDTH + MARGIN.left + MARGIN.left}, ${SEARCH_HEIGHT})`);
+
+    legend.selectAll("rect")
+        .data(d3.range(minPct, maxPct, (maxPct - minPct) / 20))
+        .enter().append("rect")
+        .attr("x", d => legendScale(d))
+        .attr("width", 10)
+        .attr("height", LEGEND_HEIGHT)
+        .style("fill", d => colorScale(d));
+
+    legend.append("text")
+        .attr("x", 0)
+        .attr("y", LEGEND_HEIGHT + 15)
+        .attr("text-anchor", "start")
+        .text(`${(minPct * 100).toFixed(1)}%`);
+
+    legend.append("text")
+        .attr("x", LEGEND_WIDTH)
+        .attr("y", LEGEND_HEIGHT + 15)
+        .attr("text-anchor", "end")
+        .text(`${(maxPct * 100).toFixed(1)}%`);
+}
+
+// General function to draw Court Outline
+function drawCourtOutline(court) {
+	court.style("fill", "none").style("stroke", "#000");
+
+	const x_nba = d3
+		.scaleLinear()
+		.range([0, USABLE_WIDTH - COURT_MARGINS * 2])
+		.domain([-25, 25]);
+	const y_nba = d3
+		.scaleLinear()
+		.range([0, COURT_HEIGHT - COURT_MARGINS * 2])
+		.domain([0, 47]);
+
+	const arc = (radius, start, end) => {
+		const points = [...Array(30)].map((d, i) => i);
+		const angle = d3
+			.scaleLinear()
+			.domain([0, points.length - 1])
+			.range([start, end]);
+		return d3
+			.lineRadial()
+			.radius(radius)
+			.angle((d, i) => angle(i))(points);
+	};
+
+	const threeAngle = (Math.atan((10 - 0.75) / 22) * 180) / Math.PI;
+	const basket = y_nba(4);
+	const basketRadius = y_nba(4.75) - basket;
+	const pi = Math.PI / 180;
+
+	const elements = [
+		{
+			type: "circle",
+			attrs: [
+				["r", basketRadius],
+				["cx", x_nba(0)],
+				["cy", y_nba(4.75)],
+			],
+		},
+		{
+			type: "rect",
+			attrs: [
+				["x", x_nba(-3)],
+				["y", basket],
+				["width", x_nba(3) - x_nba(-3)],
+				["height", 1],
+			],
+		},
+		{
+			type: "rect",
+			attrs: [
+				["x", x_nba(-8)],
+				["y", y_nba(0)],
+				["width", x_nba(8) - x_nba(-8)],
+				["height", y_nba(15) + basket],
+			],
+		},
+		{
+			type: "rect",
+			attrs: [
+				["x", x_nba(-6)],
+				["y", y_nba(0)],
+				["width", x_nba(6) - x_nba(-6)],
+				["height", y_nba(15) + basket],
+			],
+		},
+		{
+			type: "path",
+			attrs: [
+				["d", arc(x_nba(4) - x_nba(0), 90 * pi, 270 * pi)],
+				["transform", `translate(${[x_nba(0), basket]})`],
+			],
+		},
+		{
+			type: "path",
+			attrs: [
+				["d", arc(x_nba(6) - x_nba(0), 90 * pi, 270 * pi)],
+				["transform", `translate(${[x_nba(0), y_nba(15) + basket]})`],
+			],
+		},
+		{
+			type: "path",
+			attrs: [
+				["d", arc(x_nba(6) - x_nba(0), -90 * pi, 90 * pi)],
+				["transform", `translate(${[x_nba(0), y_nba(15) + basket]})`],
+				["stroke-dasharray", "3,3"],
+			],
+		},
+		{
+			type: "line",
+			attrs: [
+				["x1", x_nba(-21.775)],
+				["x2", x_nba(-21.775)],
+				["y2", y_nba(14)],
+			],
+		},
+		{
+			type: "line",
+			attrs: [
+				["x1", x_nba(21.775)],
+				["x2", x_nba(21.775)],
+				["y2", y_nba(14)],
+			],
+		},
+		{
+			type: "path",
+			attrs: [
+				[
+					"d",
+					arc(y_nba(23.75), (threeAngle + 90) * pi, (270 - threeAngle) * pi),
+				],
+				["transform", `translate(${[x_nba(0), basket + basketRadius]})`],
+			],
+		},
+		{
+			type: "path",
+			attrs: [
+				["d", arc(x_nba(6) - x_nba(0), -90 * pi, 90 * pi)],
+				["transform", `translate(${[x_nba(0), y_nba(47)]})`],
+			],
+		},
+		{
+			type: "path",
+			attrs: [
+				["d", arc(x_nba(2) - x_nba(0), -90 * pi, 90 * pi)],
+				["transform", `translate(${[x_nba(0), y_nba(47)]})`],
+			],
+		},
+		{
+			type: "line",
+			attrs: [
+				["x1", x_nba(-25)],
+				["x2", x_nba(25)],
+				["y1", y_nba(47)],
+				["y2", y_nba(47)],
+			],
+		},
+		{
+			type: "rect",
+			attrs: [
+				["x", x_nba(-25)],
+				["y", y_nba(0)],
+				["width", x_nba(25)],
+				["height", y_nba(47)],
+				["stroke", "#ddd"],
+			],
+		},
+	];
+
+	elements.forEach(({ type, attrs }) => {
+		const elem = court.append(type);
+		attrs.forEach(([attrName, attrValue]) => {
+			elem.attr(attrName, attrValue);
+		});
+	});
 }
 
 /*--Utility Functions--*/
