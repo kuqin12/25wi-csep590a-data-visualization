@@ -58,7 +58,10 @@ import { hexbin as d3Hexbin } from "d3-hexbin";
 document.addEventListener("DOMContentLoaded", init);
 
 function init() {
-	const svg = d3.create("svg").attr("viewBox", [0, 0, VIEW_WIDTH, VIEW_HEIGHT]);
+	const svg = d3
+		.create("svg")
+		.attr("viewBox", [0, 0, VIEW_WIDTH, VIEW_HEIGHT])
+		.style("font-family", '"Open Sans", sans-serif');
 
 	drawSelector(svg);
 	drawShotChart(svg, window.data.shots_contested);
@@ -137,11 +140,28 @@ function drawShotChart(svg, shotData) {
 
 	const yScale = d3
 		.scaleLinear()
-		.domain([0, d3.max(processedData, (d) => d.SHOT_PCT)])
+		.domain([0, 0.8])
 		.nice()
 		.range([DEFAULT_CHART_HEIGHT, 0]);
 
 	drawShotLines(shotChart, processedData, xScale, yScale);
+	drawShotDots(
+		shotChart,
+		processedData,
+		xScale,
+		yScale,
+		"steelblue",
+		"Shot Percentage"
+	);
+	drawShotDots(
+		shotChart,
+		processedData,
+		xScale,
+		yScale,
+		"orange",
+		"Contested Percentage",
+		true
+	);
 	drawAxesAndLabels(
 		shotChart,
 		"Shot Percentage and Contested Percentage Over Seasons",
@@ -166,23 +186,7 @@ function drawShotChart(svg, shotData) {
 			}));
 	}
 
-	function drawShotLines(chart, data) {
-		const x = d3
-			.scaleBand()
-			.domain(data.map((d) => d.SEASON))
-			.range([0, DEFAULT_CHART_WIDTH])
-			.padding(0.1);
-		const y = d3
-			.scaleLinear()
-			.domain([0, d3.max(data, (d) => d.SHOT_PCT)])
-			.nice()
-			.range([DEFAULT_CHART_HEIGHT, 0]);
-		const contestedY = d3
-			.scaleLinear()
-			.domain([0, d3.max(data, (d) => d.CONTEST_PCT)])
-			.nice()
-			.range([DEFAULT_CHART_HEIGHT, 0]);
-
+	function drawShotLines(chart, data, xScale, yScale) {
 		chart
 			.append("path")
 			.datum(data)
@@ -192,8 +196,8 @@ function drawShotChart(svg, shotData) {
 				"d",
 				d3
 					.line()
-					.x((d) => x(d.SEASON) + x.bandwidth() / 2)
-					.y((d) => y(d.SHOT_PCT))
+					.x((d) => xScale(d.SEASON) + xScale.bandwidth() / 2)
+					.y((d) => yScale(d.SHOT_PCT))
 			);
 		chart
 			.append("path")
@@ -204,10 +208,46 @@ function drawShotChart(svg, shotData) {
 				"d",
 				d3
 					.line()
-					.x((d) => x(d.SEASON) + x.bandwidth() / 2)
-					.y((d) => contestedY(d.CONTEST_PCT))
+					.x((d) => xScale(d.SEASON) + xScale.bandwidth() / 2)
+					.y((d) => yScale(d.CONTEST_PCT))
 			);
 	}
+}
+
+function drawShotDots(
+	chart,
+	data,
+	xScale,
+	yScale,
+	color,
+	tooltipText,
+	isContested = false
+) {
+	const dots = chart
+		.selectAll(`circle.${isContested ? "contested" : "shot"}`)
+		.data(data)
+		.enter()
+		.append("circle")
+		.attr("class", isContested ? "contested" : "shot")
+		.attr("cx", (d) => xScale(d.SEASON) + xScale.bandwidth() / 2)
+		.attr("cy", (d) => yScale(d[isContested ? "CONTEST_PCT" : "SHOT_PCT"]))
+		.attr("r", 4)
+		.attr("fill", color)
+		.on("mouseover", function (event, d) {
+			d3.select(this).attr("stroke", "#333").attr("stroke-width", 2);
+		})
+		.on("mouseout", function () {
+			d3.select(this).attr("stroke", null);
+		});
+
+	dots
+		.append("title")
+		.text(
+			(d) =>
+				`Year: ${d.SEASON}\n${tooltipText}: ${(
+					d[isContested ? "CONTEST_PCT" : "SHOT_PCT"] * 100
+				).toFixed(2)}%`
+		);
 }
 
 function drawShotHeatmap(svg, shotsLocData) {
@@ -264,6 +304,12 @@ function drawEfficiencyChart(svg, efficiencyData) {
 		.attr("cy", (d) => yScale(d.CONTEST_PCT))
 		.attr("r", 4)
 		.attr("fill", "steelblue")
+		.on("mouseover", function (event, d) {
+			d3.select(this).attr("stroke", "#333").attr("stroke-width", 2);
+		})
+		.on("mouseout", function (d) {
+			d3.select(this).attr("stroke", null);
+		})
 		.append("title")
 		.text(
 			(d) =>
@@ -350,40 +396,51 @@ function drawHeatmap(court, shotsLocData) {
 			(d) =>
 				`Shot Percentage: ${(d.pct * 100).toFixed(2)}%\nAttempts: ${d.length}`
 		);
-	
+
 	drawHeatmapLegend(court, colorScale, minPct, maxPct);
 }
 
 function drawHeatmapLegend(svg, colorScale, minPct, maxPct) {
-    const LEGEND_WIDTH = 200;
-    const LEGEND_HEIGHT = 20;
-    
-    const legendScale = d3.scaleLinear()
-        .domain([minPct, maxPct])
-        .range([0, LEGEND_WIDTH]);
+	const LEGEND_WIDTH = 200;
+	const LEGEND_HEIGHT = 20;
 
-    const legend = svg.append("g")
-        .attr("transform", `translate(${DEFAULT_CHART_WIDTH + MARGIN.left + MARGIN.left}, ${SEARCH_HEIGHT})`);
+	const legendScale = d3
+		.scaleLinear()
+		.domain([minPct, maxPct])
+		.range([0, LEGEND_WIDTH]);
 
-    legend.selectAll("rect")
-        .data(d3.range(minPct, maxPct, (maxPct - minPct) / 20))
-        .enter().append("rect")
-        .attr("x", d => legendScale(d))
-        .attr("width", 10)
-        .attr("height", LEGEND_HEIGHT)
-        .style("fill", d => colorScale(d));
+	const legend = svg
+		.append("g")
+		.attr(
+			"transform",
+			`translate(${
+				DEFAULT_CHART_WIDTH + MARGIN.left + MARGIN.left
+			}, ${SEARCH_HEIGHT})`
+		);
 
-    legend.append("text")
-        .attr("x", 0)
-        .attr("y", LEGEND_HEIGHT + 15)
-        .attr("text-anchor", "start")
-        .text(`${(minPct * 100).toFixed(1)}%`);
+	legend
+		.selectAll("rect")
+		.data(d3.range(minPct, maxPct, (maxPct - minPct) / 20))
+		.enter()
+		.append("rect")
+		.attr("x", (d) => legendScale(d))
+		.attr("width", 10)
+		.attr("height", LEGEND_HEIGHT)
+		.style("fill", (d) => colorScale(d));
 
-    legend.append("text")
-        .attr("x", LEGEND_WIDTH)
-        .attr("y", LEGEND_HEIGHT + 15)
-        .attr("text-anchor", "end")
-        .text(`${(maxPct * 100).toFixed(1)}%`);
+	legend
+		.append("text")
+		.attr("x", 0)
+		.attr("y", LEGEND_HEIGHT + 15)
+		.attr("text-anchor", "start")
+		.text(`${(minPct * 100).toFixed(1)}%`);
+
+	legend
+		.append("text")
+		.attr("x", LEGEND_WIDTH)
+		.attr("y", LEGEND_HEIGHT + 15)
+		.attr("text-anchor", "end")
+		.text(`${(maxPct * 100).toFixed(1)}%`);
 }
 
 // General function to draw Court Outline
