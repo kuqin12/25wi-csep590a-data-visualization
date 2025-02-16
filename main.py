@@ -5,21 +5,10 @@ import random
 from nba_api.stats.endpoints import leaguehustlestatsplayer, leaguehustlestatsteam
 import get_nba_data
 import os
-import geopandas as gpd
-import h3
-
-
-def lat_lon_to_h3(lat, lon, resolution):
-    return h3.latlng_to_cell(lat, lon, resolution)
 
 
 # Run the main function
 if __name__ == "__main__":
-    # Get the list of all players
-    player_list = players.get_players()
-    if not os.path.exists('all_players.csv'):
-        pd.DataFrame(player_list).to_csv('all_players.csv', index=False)
-
     # Get the list of all teams
     team_list = teams.get_teams()
     if not os.path.exists('all_teams.csv'):
@@ -74,21 +63,18 @@ if __name__ == "__main__":
             full_df = pd.concat([full_df, df_t], ignore_index=True)
 
         full_df.to_csv('x_shot_summary_2014_2024.csv', index=False)
-
-        # full_loc_df['LOC_H3'] = full_loc_df.apply(lambda row: lat_lon_to_h3(row['LOC_X'], row['LOC_Y'], 8), axis=1)
-        # grouped = full_loc_df.groupby(['LOC_H3', 'SEASON', 'SHOT_TYPE']).agg({'SHOT_MADE_FLAG': 'sum', 'SHOT_ATTEMPTED_FLAG': 'sum'}).reset_index()
-        # grouped['GEO'] = grouped['LOC_H3'].apply(lambda x: h3.cell_to_boundary(x))
-        # gdf = gpd.GeoDataFrame(grouped[['LOC_H3', 'GEO']], geometry=gpd.points_from_xy(grouped['GEO'].apply(lambda x: x[0][0]), grouped['GEO'].apply(lambda x: x[0][1])))
-        # # I think we only need one geometry column, so we can drop the LOC_H3 column
-        # gdf.to_file('x_shot_summary_2014_2024_loc.geojson', driver='GeoJSON')
-        # # save the grouped dataframe to a csv file
-        # grouped.drop(columns=['GEO'], inplace=True)
-        # grouped.to_csv('x_shot_summary_2014_2024_loc.csv', index=False)
-        # save the full_loc_df to a csv file
         full_loc_df.to_csv('x_shot_summary_2014_2024_loc.csv', index=False)
     else:
         full_df = pd.read_csv('x_shot_summary_2014_2024.csv')
         full_loc_df = pd.read_csv('x_shot_summary_2014_2024_loc.csv')
+
+    # Get the list of all players during the period
+    player_list = players.get_players()
+    if not os.path.exists('all_players.csv'):
+        player_list_df = pd.DataFrame(player_list)
+        # Remove the player entry whose X_ID are not present in the full_df
+        player_list_df = player_list_df[player_list_df['id'].isin(full_df['X_ID'])]
+        player_list_df.to_csv('all_players.csv', index=False)
 
     # The repo above does not provide the contested data, so we need to get it from the nba_api
     contested_df = pd.DataFrame()
