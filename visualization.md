@@ -283,7 +283,16 @@ function updateShotChart(filteredData) {
 					.transition()
 					.duration(750)
 					.attr("cx", (d) => shotXScale(d.SEASON) + shotXScale.bandwidth() / 2)
-					.attr("cy", (d) => shotYScale(d.SHOT_PCT)),
+					.attr("cy", (d) => shotYScale(d.SHOT_PCT))
+					.each(function (d) {
+						d3.select(this)
+							.select("title")
+							.text(
+								`Year: ${d.SEASON}\nShot Percentage: ${(
+									d.SHOT_PCT * 100
+								).toFixed(2)}%`
+							);
+					}),
 
 			(exit) => exit.remove()
 		);
@@ -313,7 +322,17 @@ function updateShotChart(filteredData) {
 					.transition()
 					.duration(750)
 					.attr("cx", (d) => shotXScale(d.SEASON) + shotXScale.bandwidth() / 2)
-					.attr("cy", (d) => shotYScale(d.CONTEST_PCT)),
+					.attr("cy", (d) => shotYScale(d.CONTEST_PCT))
+					.selection()
+					.each(function (d) {
+						d3.select(this)
+							.select("title")
+							.text(
+								`Year: ${d.SEASON}\nContested Shot Percentage: ${(
+									d.CONTEST_PCT * 100
+								).toFixed(2)}%`
+							);
+					}),
 
 			(exit) => exit.remove()
 		);
