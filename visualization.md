@@ -5,670 +5,915 @@ toc: false
 
 # Interactive Visualization Submission
 
-Update the content of this page with your [Interactive Visualization](../w6/assignment) submission. If working as a team, all team members should post same the content in each person's individual repository.
+```js echo
+async function loadData() {
+	const BASE_URL =
+		"https://media.githubusercontent.com/media/kuqin12/25wi-csep590a-data-visualization/refs/heads/main/";
 
-You are encouraged to delete all existing content on this page and replace it with your own!
+	const players = (await d3.csv(BASE_URL + "all_players.csv")).sort((a, b) =>
+		a.last_name.localeCompare(b.last_name)
+	);
+	const teams = (await d3.csv(BASE_URL + "all_teams.csv")).sort((a, b) =>
+		a.full_name.localeCompare(b.full_name)
+	);
+
+	const shots_contested = await d3.csv(
+		BASE_URL + "x_shot_summary_2014_2024_contested.csv",
+		d3.autoType
+	);
+	const shots_loc = await d3.csv(
+		BASE_URL + "x_shot_summary_2014_2024_loc.csv",
+		d3.autoType
+	);
+
+	return { players, teams, shots_contested, shots_loc };
+}
+
+loadData().then((data) => {
+	console.log("Data Loaded:", data);
+	window.data = data;
+	init();
+});
+```
 
 ```js echo
-import { render } from "../components/vega-lite.js";
+const VIEW_WIDTH = 1500;
+const VIEW_HEIGHT = 700;
+const MARGIN = { top: 50, right: 50, bottom: 80, left: 80 };
+const DEFAULT_CHART_WIDTH = VIEW_WIDTH * 0.3 - MARGIN.left - MARGIN.right;
+const DEFAULT_CHART_HEIGHT = VIEW_HEIGHT / 2 - MARGIN.top - MARGIN.bottom;
+const COURT_WIDTH = VIEW_WIDTH * 0.4;
+const SEARCH_WIDTH = VIEW_WIDTH * 0.3;
+const SEARCH_HEIGHT = 200;
+const AUTO_WIDTH = 150;
+const AUTO_HEIGHT = 150;
+const USABLE_WIDTH = Math.min(500, COURT_WIDTH);
+const COURT_MARGINS = 20;
+const COURT_HEIGHT = (USABLE_WIDTH / 50) * 47;
+```
+
+```js
 import { hexbin as d3Hexbin } from "d3-hexbin";
 
-// Load the teams, players and shots data
-var players = await d3.csv("https://raw.githubusercontent.com/kuqin12/25wi-csep590a-data-visualization/refs/heads/main/all_players.csv");
-players = players.sort((a, b) => a.last_name.localeCompare(b.last_name));
-
-var teams = await d3.csv("https://raw.githubusercontent.com/kuqin12/25wi-csep590a-data-visualization/refs/heads/main/all_teams.csv");
-teams = teams.sort((a, b) => a.full_name.localeCompare(b.full_name));
-
-const shots_contested = await d3.csv("https://raw.githubusercontent.com/kuqin12/25wi-csep590a-data-visualization/refs/heads/main/x_shot_summary_2014_2024_contested.csv", d3.autoType);
-
-const geo_data = FileAttachment("../data/city-weather.json").json();
-
-const shots_loc = FileAttachment("../data/x_shot_summary_2014_2024_loc.csv").csv({type: d3.autoType});
-```
-
-```js echo
-// ------------------------------------------------------------------------------
-// |                        |                               |                   |
-// |                        |                               |                   |
-// |                        |                               |                   |
-// |                        |                               |-------------------|
-// |                        |                               |                   |
-// |                        |                               |                   |
-// |------------------------|                               |                   |
-// |                        |                               |                   |
-// |                        |                               |                   |
-// |                        |                               |                   |
-// |                        |                               |                   |
-// |                        |                               |                   |
-// |                        |                               |                   |
-// ------------------------------------------------------------------------------
-
-// Define some constants for the chart
-const view_width = 1080;
-const view_height = 700;
-
-// For shot chart
-const shot_width = view_width * 0.3;
-const shot_height = view_height / 2;
-
-// For court chart
-const court_width = view_width * 0.4;
-
-// For search box
-const search_width = view_width * 0.3;
-const search_height = 200;
-
-// For auto chart
-const auto_width = search_width;
-const auto_height = view_height - search_height;
-```
-
-```js echo
-display((() => {
-    const svg = d3.create("svg")
-        .attr("viewBox", [0, 0, view_width, view_height]);
-
-    // Create a group element to hold the team selector
-    const selectorGroup = svg.append("g")
-        .attr("transform", `translate(${shot_width + court_width}, 0)`);
-
-    // Create an input element inside the SVG
-    const foreignObject = selectorGroup.append("foreignObject")
-            .attr("width", search_width - 10)
-            .attr("height", search_height)
-
-    const body = foreignObject.append("xhtml:body")
-        .style("margin", "0")
-        .style("padding", "0");
-
-    const input = body.append("input")
-        .attr("type", "text")
-        .attr("id", "autocomplete-input")
-        .attr("style", "width: 90%; height: 100%;")
-        .attr("placeholder", "Search for a team or player...");
-
-    // Function to get the value of the input element
-    function getInputValue() {
-        return d3.select("#autocomplete-input").property("value").toLowerCase();
-    }
-
-    // Filter the data based on the input value
-    input.on("input", function() {
-        const value = getInputValue();
-        const suggestions = teams.filter(d => d.full_name.toLowerCase().includes(value))
-        .concat(players.filter(d => d.full_name.toLowerCase().includes(value)));
-        showSuggestions(suggestions);
-    });
-
-    // Function to display the suggestions
-    function showSuggestions(suggestions) {
-        d3.select("#suggestions").remove();
-
-        const suggestionsContainer = body.append("div")
-            .attr("id", "suggestions")
-            .attr("style", "position: absolute; width: 90%; max-height: 150px; overflow-y: auto; background: white; border: 1px solid #ccc;");
-        suggestions.forEach(suggestion => {
-            suggestionsContainer.append("div")
-                .attr("style", "padding: 5px; cursor: pointer;")
-                .text(suggestion.full_name)
-                .on("click", function() {
-                    d3.select("#autocomplete-input").property("value", suggestion.full_name);
-                    d3.select("#suggestions").remove();
-                    update(suggestion.id);
-                });
-        });
-    }
-
-    svg.append('g')
-        .attr('class', 'chart')
-        .attr('id', 'auto_chart')
-        .attr('transform', `translate(${shot_width + court_width},${search_height})`)
-        .append('image')
-        .attr('xlink:href', 'https://cdn.1min30.com/wp-content/uploads/2018/03/logo-NBA.jpg')
-        .attr('width', auto_width)
-        .attr('height', auto_height);
-
-    /// ------------------------------ Shot Chart ------------------------------    
-    svg.append('g')
-        .attr('class', 'chart')
-        .attr('id', 'shot_chart')
-        .attr('transform', 'translate(0, 0)');
-
-    // For chart 1, we will draw year vs. shot percentage
-    var shot_data = d3.flatGroup(shots_contested, d => d.SEASON)
-        .map(d => ({
-            // parse the year from the season string into a number
-            SEASON: d[0],
-            SHOT_PCT: d3.sum(d[1], e => e.MADE_3PT) / d3.sum(d[1], e => e.ATTEMPTED_3PT),
-            CONTEST_PCT: d3.sum(d[1], e => e.CONTESTED_3PT) / d3.sum(d[1], e => e.ATTEMPTED_3PT)
-        }));
-
-   const x = d3.scaleBand()
-        .domain(shot_data.map(d => d.SEASON))
-        .range([0, shot_width])
-        .padding(0.1);
-
-    const y = d3.scaleLinear()
-        .domain([0, d3.max(shot_data, d => d.SHOT_PCT)])
-        .nice()
-        .range([shot_height, 0]);
-
-    // Create the line
-    const pct_line = d3.line()
-        .x(d => x(d.SEASON) + x.bandwidth() / 2)
-        .y(d => y(d.SHOT_PCT));
-
-    // For the secondary line, we will draw year vs. contested shot percentage
-    const yScale2 = d3.scaleLinear()
-        .domain([0, d3.max(shot_data, d => d.CONTEST_PCT)])
-        .nice()
-        .range([shot_height, 0]);
-
-    // Create the line
-    const contested_line = d3.line()
-        .x(d => x(d.SEASON) + x.bandwidth() / 2)
-        .y(d => yScale2(d.CONTEST_PCT));
-
-    const shot_chart = svg.select("#shot_chart");
-
-    const pct_path = shot_chart.append("path")
-        .datum(shot_data)
-        .attr("fill", "none")
-        .attr("stroke", "steelblue")
-        .attr("stroke-width", 1.5)
-        .attr("d", pct_line);
-
-    const contest_path = shot_chart.append("path")
-        .datum(shot_data)
-        .attr("fill", "none")
-        .attr("stroke", "orange")
-        .attr("stroke-width", 1.5)
-        .attr("d", contested_line);
-
-    // Add circles at data points
-    const shot_dots = shot_chart.selectAll("circle")
-        .data(shot_data)
-        .enter().append("circle")
-        .attr("cx", d => x(d.SEASON) + x.bandwidth() / 2)
-        .attr("cy", d => y(d.SHOT_PCT))
-        .attr("r", 4)
-        .attr("fill", "steelblue");
-
-    const contest_dots = shot_chart.selectAll("circle2")
-        .data(shot_data)
-        .enter().append("circle")
-        .attr("cx", d => x(d.SEASON) + x.bandwidth() / 2)
-        .attr("cy", d => yScale2(d.CONTEST_PCT))
-        .attr("r", 4)
-        .attr("fill", "orange");
-
-    shot_chart.append("g")
-        .attr("transform", `translate(0,${shot_height})`)
-        .call(d3.axisBottom(x).tickSizeOuter(0))
-        .attr("font-size", "10px")
-        // rotate the x-axis labels
-        .selectAll("text")
-        .attr("transform", "rotate(-45)")
-        .attr("text-anchor", "end")
-        .attr("dx", "-0.5em")
-        .attr("dy", "0.5em");
-
-    shot_chart.append("g")
-        .call(d3.axisLeft(y).tickSizeOuter(0))
-        .selectAll("path, line")
-        .attr("stroke", "black")
-        .attr("shape-rendering", "crispEdges");
-
-    shot_dots
-        .append('title')
-        .text(d => `Year: ${d.SEASON}\nShot Percentage: ${(d.SHOT_PCT * 100).toFixed(2)}%`);
-
-    shot_dots
-        .on("mouseover", function(event, d) {
-            d3.select(this).attr('stroke', '#333').attr('stroke-width', 2);
-        })
-        .on("mouseout", function(d) {
-            d3.select(this).attr('stroke', null);
-        });
-
-    contest_dots
-        .append('title')
-        .text(d => `Year: ${d.SEASON}\nShot Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`);
-
-    contest_dots
-        .on("mouseover", function(event, d) {
-            d3.select(this).attr('stroke', '#333').attr('stroke-width', 2);
-        })
-        .on("mouseout", function(d) {
-            d3.select(this).attr('stroke', null);
-        });
-
-    /// --------------------------- Efficiency Chart ---------------------------
-
-    svg.append('g')
-        .attr('class', 'chart')
-        .attr('id', 'efficiency_chart')
-        .attr('transform', `translate(0,${shot_height})`);
-
-    // This is the scatter plot of shot efficiency vs. contest intensity
-    const efficiency_data = shots_contested.map(d => ({
-            // parse the year from the season string into a number
-            X_ID: d.X_ID,
-            SEASON: d.SEASON,
-            SHOT_PCT: d.MADE_3PT / d.ATTEMPTED_3PT,
-            CONTEST_PCT: d.CONTESTED_3PT / d.ATTEMPTED_3PT
-        }));
-
-    display(efficiency_data)
-
-    const x_eff = d3.scaleLinear()
-        .domain([0, d3.max(efficiency_data, d => d.SHOT_PCT)])
-        .nice()
-        .range([0, shot_width]);
-
-    const y_eff = d3.scaleLinear()
-        .domain([0, d3.max(efficiency_data, d => d.CONTEST_PCT)])
-        .nice()
-        .range([shot_height, 0]);
-
-    const efficiency_chart = svg.select("#efficiency_chart");
-    efficiency_chart.append("g")
-        .attr("transform", `translate(0,${shot_height})`)
-        .call(d3.axisBottom(x_eff).ticks(5))
-        .attr("font-size", "10px");
-
-    efficiency_chart.append("g")
-        .call(d3.axisLeft(y_eff).ticks(5))
-        .attr("font-size", "10px");
-
-    efficiency_chart.selectAll("circle")
-        .data(efficiency_data)
-        .enter().append("circle")
-        .attr("cx", d => x_eff(d.SHOT_PCT))
-        .attr("cy", d => y_eff(d.CONTEST_PCT))
-        .attr("r", 4)
-        .attr("fill", "steelblue");
-
-    efficiency_chart.selectAll("circle")
-        .append('title')
-        .text(d => `ID ${// look up the id in the original data
-            d.X_ID
-            // players.find(e => e.X_ID === d.X_ID).id
-        }\n
-        Year: ${d.SEASON}\nShot Percentage: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`);
-
-    efficiency_chart.selectAll("circle")
-        .on("mouseover", function(event, d) {
-            d3.select(this).attr('stroke', '#333').attr('stroke-width', 2);
-        })
-        .on("mouseout", function(d) {
-            d3.select(this).attr('stroke', null);
-        });
-
-    /// ----------------------------- Court Chart ------------------------------
-
-    svg.append('g')
-        .attr('class', 'chart')
-        .attr('id', 'court_chart')
-        .attr('transform', `translate(${shot_width},0)`);
-
-    // Draw NBA half-court in the larger chart
-    const court = svg.select("#court_chart")
-        .style('fill', 'none')
-        .style('stroke', '#000');
-    const usableWidth = Math.min(500, court_width)
-    const margins = 20
-    const height = usableWidth / 50 * 47
-
-    const x_nba = d3.scaleLinear().range([0, usableWidth - margins * 2]).domain([-25,25])
-    const y_nba = d3.scaleLinear().range([0, height - margins * 2]).domain([0, 47])
-
-    const arc = (radius, start, end) => {
-        const points = [...Array(30)].map((d,i) => i);
-
-        const angle = d3.scaleLinear()
-            .domain([ 0, points.length - 1 ])
-            .range([ start, end ]);
-
-        const line = d3.lineRadial()
-            .radius(radius)
-            .angle((d,i) => angle(i));
-
-        return line(points);
-    }
-
-    const threeAngle = Math.atan( (10 - 0.75) / 22 ) * 180 / Math.PI
-    const basket = y_nba(4)
-    const basketRadius = y_nba(4.75) - basket
-    const pi = Math.PI / 180
-
-    // basket
-    court.append('circle')
-        .attr('r', basketRadius)
-        .attr('cx', x_nba(0))
-        .attr('cy', y_nba(4.75))
-    
-    // backboard
-    court.append('rect')
-        .attr('x', x_nba(-3))
-        .attr('y', basket)
-        .attr('width', x_nba(3) - x_nba(-3))
-        .attr('height', 1)
-    
-    // outer paint
-    court.append('rect')
-        .attr('x', x_nba(-8))
-        .attr('y', y_nba(0))
-        .attr('width', x_nba(8) - x_nba(-8))
-        .attr('height', y_nba(15) + basket)
-    
-    // inner paint
-    court.append('rect')
-        .attr('x', x_nba(-6))
-        .attr('y', y_nba(0))
-        .attr('width', x_nba(6) - x_nba(-6))
-        .attr('height', y_nba(15) + basket)
-
-    // restricted area
-    court.append('path')
-        .attr('d', arc(x_nba(4) - x_nba(0), 90 * pi, 270 * pi))
-        .attr('transform', `translate(${[x_nba(0), basket]})`)
-
-    // freethrow
-    court.append('path')
-        .attr('d', arc(x_nba(6) - x_nba(0), 90 * pi, 270 * pi))
-        .attr('transform', `translate(${[x_nba(0), y_nba(15) + basket]})`)
-    
-    // freethrow dotted
-    court.append('path')
-        .attr('d', arc(x_nba(6) - x_nba(0), -90 * pi, 90 * pi))
-        .attr('stroke-dasharray', '3,3')
-        .attr('transform', `translate(${[x_nba(0), y_nba(15) + basket]})`)
-    
-    // 3-point lines
-    court.append('line')
-        .attr('x1', x_nba(-21.775)) // lines up the stroke a little better than the true 22 ft.
-        .attr('x2', x_nba(-21.775))
-        .attr('y2', y_nba(14))
-    
-    court.append('line')
-        .attr('x1', x_nba(21.775))
-        .attr('x2', x_nba(21.775))
-        .attr('y2', y_nba(14))
-    
-    // 3-point arc
-    court.append('path')
-        .attr('d', arc(y_nba(23.75), (threeAngle + 90) * pi, (270 - threeAngle) * pi))
-        .attr('transform', `translate(${[x_nba(0), basket + basketRadius]})`)
-
-    // half court outer
-    court.append('path')
-        .attr('d', arc(x_nba(6) - x_nba(0), -90 * pi, 90 * pi))
-        .attr('transform', `translate(${[x_nba(0), y_nba(47)]})`)
-    
-    // half court inner
-    court.append('path')
-        .attr('d', arc(x_nba(2) - x_nba(0), -90 * pi, 90 * pi))
-        .attr('transform', `translate(${[x_nba(0), y_nba(47)]})`)
-    
-    // half court line
-    court.append('line')
-        .attr('x1', x_nba(-25))
-        .attr('x2', x_nba(25))
-        .attr('y1', y_nba(47))
-        .attr('y2', y_nba(47))
-    
-    // boundaries
-    court.append('rect')
-        .style('stroke', '#ddd')
-        .attr('x', x_nba(-25))
-        .attr('y', y_nba(0))
-        .attr('width', x_nba(25))
-        .attr('height', y_nba(47))
-
-    // Then using the court chart, we will draw the shot heatmap
-    const x_nba_data = d3.scaleLinear().range([0, usableWidth - margins * 2]).domain([-250,250])
-    const y_nba_data = d3.scaleLinear().range([0, (height - margins * 2) * 2]).domain([-52, 888])
-    const court_chart = svg.select("#court_chart");
-    const hexbin = d3Hexbin()
-        .x(d => x_nba_data(d.LOC_X))
-        .y(d => y_nba_data(d.LOC_Y))
-        .extent([[0, 0], [usableWidth - margins * 2, (height - margins * 2) * 2]])
-        .radius(4);
-
-    // loc_x needs to converted to numbers
-    const bins = hexbin(shots_loc
-        .filter(d => d.LOC_Y < 418) // Filter the data to only include shots taken in the front court
-        .map(d => ({
-            LOC_X: +d.LOC_X,
-            LOC_Y: +d.LOC_Y,
-            MADE: d.SHOT_MADE_FLAG,
-            ATTEMPTED: d.SHOT_ATTEMPTED_FLAG
-        })));
-
-    bins.forEach(d => {
-        d.total_made = d3.sum(d, e => e.MADE);
-        d.pct = d3.sum(d, e => e.MADE) / d.length;
-    });
-
-    // try to find the max/min value of d3.sum(d, e => e.MADE) / d.length
-    const max_pct = d3.max(bins, d => d.pct);
-    const min_pct = d3.min(bins, d => d.pct);
-
-    const q25 = d3.quantile(bins.map(d => d.pct), 0.3);
-    const q75 = d3.quantile(bins.map(d => d.pct), 0.5);
-    const color = d3.scaleSequential(d3.interpolateRdYlBu)
-        .domain([min_pct, max_pct])
-
-    const legendScale = d3.scaleLinear()
-        .domain([min_pct, max_pct])
-        .range([0, 200]);
-
-    const legend = svg.append("g")
-        .attr("transform", `translate(${shot_width + court_width},${search_height})`);
-
-    legend.selectAll("rect")
-        .data(d3.range(min_pct, max_pct, (max_pct - min_pct) / 20))
-        .enter().append("rect")
-        .attr("x", d => legendScale(d))
-        .attr("width", 10)
-        .attr("height", 20)
-        .style("fill", d => color(d));
-
-    const hexagons = court_chart.append("g")
-        .selectAll("path")
-        .data(bins)
-        .enter().append("path")
-        .attr("class", "hexagon")
-        .attr("d", hexbin.hexagon())
-        .attr("transform", d => `translate(${d.x},${d.y})`)
-        .attr("fill", d => color(d.pct))
-        .attr("stroke", "white")
-        .attr("opacity", 0.6)
-        .on("mouseover", function(event, d) {
-            d3.select(this).attr('stroke', '#333');
-        })
-        .on("mouseout", function(d) {
-            d3.select(this).attr('stroke', 'white');
-        });
-
-    hexagons
-        .append('title')
-        .text(d => `Shot Percentage: ${(d.total_made / d.length * 100).toFixed(2)}%\nAttempts: ${d.length}`);
-
-
-    /// ----------------------------- Update Chart -----------------------------
-    function update_shot_chart(team) {
-        display(team)
-        const data = d3.flatGroup(team, d => d.SEASON)
-            .map(d => ({
-                // parse the year from the season string into a number
-                SEASON: d[0],
-                SHOT_PCT: d3.sum(d[1], e => e.MADE_3PT) / d3.sum(d[1], e => e.ATTEMPTED_3PT),
-                CONTEST_PCT: d3.sum(d[1], e => e.CONTESTED_3PT) / d3.sum(d[1], e => e.ATTEMPTED_3PT)
-            }));
-
-        const shot_chart = svg.select("#shot_chart");
-
-        const x_team = d3.scaleBand()
-            .domain(data.map(d => d.SEASON))
-            .range([0, shot_width])
-            .padding(0.1);
-
-        const y_team = d3.scaleLinear()
-            .domain([0, d3.max(data, d => d.SHOT_PCT)])
-            .nice()
-            .range([shot_height, 0]);
-
-        // Create the line
-        const new_pct_line = d3.line()
-            .x(d => x_team(d.SEASON) + x.bandwidth() / 2)
-            .y(d => y_team(d.SHOT_PCT));
-
-        const y_contested = d3.scaleLinear()
-            .domain([0, d3.max(data, d => d.CONTEST_PCT)])
-            .nice()
-            .range([shot_height, 0]);
-
-        // Create the line
-        const new_contested_line = d3.line()
-            .x(d => x_team(d.SEASON) + x.bandwidth() / 2)
-            .y(d => y_contested(d.CONTEST_PCT));
-
-        pct_path
-            .datum(data)
-            .transition()
-            .duration(1000)
-            .attr("d", new_pct_line);
-
-        // Update circles at data points
-        shot_dots
-            .data(data)
-            .transition()
-            .duration(1000)
-            .attr("cx", d => x_team(d.SEASON) + x.bandwidth() / 2)
-            .attr("cy", d => y_team(d.SHOT_PCT))
-            .attr("r", 4)
-            .attr("fill", "steelblue");
-
-        // Update the contested line
-        contest_path
-            .datum(data)
-            .transition()
-            .duration(1000)
-            .attr("d", new_contested_line);
-
-        // Update circles at data points
-        contest_dots
-            .data(data)
-            .transition()
-            .duration(1000)
-            .attr("cx", d => x(d.SEASON) + x.bandwidth() / 2)
-            .attr("cy", d => y_contested(d.CONTEST_PCT))
-            .attr("r", 4)
-            .attr("fill", "orange");
-
-        // Update the y-axis
-        shot_chart.select("g")
-            .transition()
-            .duration(1000)
-            .call(d3.axisLeft(y).tickSizeOuter(0))
-            .selectAll("path, line")
-            .attr("stroke", "black")
-            .attr("shape-rendering", "crispEdges");
-
-        // Update the x-axis
-        shot_chart.select("g")
-            .transition()
-            .duration(1000)
-            .call(d3.axisBottom(x).tickSizeOuter(0))
-            .attr("font-size", "10px")
-            // rotate the x-axis labels
-            .selectAll("text")
-            .attr("transform", "rotate(-45)")
-            .attr("text-anchor", "end")
-            .attr("dx", "-0.5em")
-            .attr("dy", "0.5em");
-    }
-
-    function update_chart(year_start, year_end, data) {
-        shots_contested
-            .filter(d => d.SEASON >= year_start && d.SEASON <= year_end)
-            .map(d => ({
-                // parse the year from the season string into a number
-                X_ID: d.X_ID,
-                SEASON: d.SEASON,
-                SHOT_PCT: d.MADE_3PT / d.ATTEMPTED_3PT,
-                CONTEST_PCT: d.CONTESTED_3PT / d.ATTEMPTED_3PT
-            }));
-        // const x = d3.scaleBand()
-        //     .domain(data.map(d => d.SEASON))
-        //     .range([0, shot_width])
-        //     .padding(0.1);
-
-        // const y = d3.scaleLinear()
-        //     .domain([0, d3.max(data, d => d.SHOT_PCT)])
-        //     .nice()
-        //     .range([shot_height, 0]);
-
-        // // Create the line
-        // const line = d3.line()
-        //     .x(d => x(d.SEASON) + x.bandwidth() / 2)
-        //     .y(d => y(d.SHOT_PCT));
-
-        // const shot_chart = svg.select("#shot_chart");
-
-        // shot_chart.select("path")
-        //     .datum(data)
-        //     .transition()
-        //     .duration(1000)
-        //     .attr("d", line);
-
-        // // Update circles at data points
-        // shot_chart.selectAll("circle")
-        //     .data(data)
-        //     .transition()
-        //     .duration(1000)
-        //     .attr("cx", d => x(d.SEASON) + x.bandwidth() / 2)
-        //     .attr("cy", d => y(d.SHOT_PCT))
-        //     .attr("r", 4)
-        //     .attr("fill", "steelblue");
-    }
-
-    function update(team_or_player) {
-        // first we determine if this is a team or player
-        const is_team = teams.some(d => d.id === team_or_player);
-        const is_player = players.some(d => d.id === team_or_player);
-
-        var url = ''
-        var contested_data = []
-
-        // This will just be a image downloaded from nba.com
-        if (is_player) {
-            // If this is a player, it goes like https://cdn.nba.com/headshots/nba/latest/1040x760/${player_id}.png
-            url = `https://cdn.nba.com/headshots/nba/latest/1040x760/${team_or_player}.png`;
-            contested_data = shots_contested.filter(d => d.X_ID === parseInt(team_or_player));
-        } else if (is_team) {
-            // If this is a team, it goes like https://cdn.nba.com/logos/nba/${team_id}/primary/L/logo.svg
-            url = `https://cdn.nba.com/logos/nba/${team_or_player}/primary/L/logo.svg`;
-            contested_data = shots_contested.filter(d => d.X_ID === parseInt(team_or_player));
-        } else {
-            // if it is neither, we will roll back to the whole league
-            url = 'https://cdn.nba.com/logos/leagues/logo-nba.svg';
-            contested_data = shots_contested;
-        }
-
-        svg.select("#auto_chart")
-        .selectAll('image')
-        .attr('xlink:href', url);
-
-        update_shot_chart(contested_data);
-
-        // Then update the other charts
-        // update_chart(year, year, efficiency_data);
-    }
-
-    return Object.assign(svg.node(), { update });
-})());
+document.addEventListener("DOMContentLoaded", init);
+
+function init() {
+	const svg = d3
+		.create("svg")
+		.attr("viewBox", [0, 0, VIEW_WIDTH, VIEW_HEIGHT])
+		.style("font-family", '"Open Sans", sans-serif');
+
+	svg
+		.append("text")
+		.attr("x", VIEW_WIDTH / 2)
+		.attr("y", MARGIN.top / 2)
+		.attr("text-anchor", "middle")
+		.attr("font-size", "24px")
+		.attr("font-weight", "bold")
+		.text("NBA Shot Insights: Trends, Efficiency & Court Hotspots");
+
+	drawSelector(svg);
+	drawShotChart(svg, window.data.shots_contested);
+	drawEfficiencyChart(svg, window.data.shots_contested);
+	drawShotHeatmap(svg, window.data.shots_loc);
+	renderLogo(svg);
+
+	display(svg.node());
+}
+
+function drawSelector(svg) {
+	const selectorGroup = svg
+		.append("g")
+		.attr(
+			"transform",
+			`translate(${VIEW_WIDTH - SEARCH_WIDTH - MARGIN.right}, ${
+				MARGIN.top / 2
+			})`
+		);
+	const foreignObject = selectorGroup
+		.append("foreignObject")
+		.attr("width", SEARCH_WIDTH)
+		.attr("height", SEARCH_HEIGHT)
+		.style("position", "relative");
+	const body = foreignObject
+		.append("xhtml:body")
+		.style("margin", "5px")
+		.style("padding", "5px");
+
+	const input = body
+		.append("input")
+		.attr("type", "text")
+		.attr("id", "autocomplete-input")
+		.attr(
+			"style",
+			`
+			width: 80%; 
+            height: 30px;
+            font-size: 14px;
+            padding: 5px; 
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+			`
+		)
+		.attr("placeholder", "Search for a team, player, or season")
+		.on("input", debounce(handleSearchInput, 300));
+
+	function handleSearchInput() {
+		const value = input.property("value").toLowerCase();
+		if (!value.trim()) {
+			updateCharts(null, false);
+			d3.select("#suggestions").remove();
+			return;
+		}
+		let suggestions = [];
+
+		window.data.teams.forEach((t) => {
+			if (t.full_name.toLowerCase().includes(value)) suggestions.push(t);
+		});
+
+		window.data.players.forEach((p) => {
+			if (p.full_name.toLowerCase().includes(value)) suggestions.push(p);
+		});
+
+		const availableYears = new Set(
+			window.data.shots_contested.map((d) => d.SEASON)
+		);
+		availableYears.forEach((year) => {
+			const yearStr = `Season ${year}`;
+			if (yearStr.toLowerCase().includes(value)) {
+				suggestions.push({ id: `year-${year}`, full_name: yearStr });
+			}
+		});
+
+		showSuggestions(suggestions);
+	}
+
+	function showSuggestions(suggestions) {
+		d3.select("#suggestions").remove();
+		const suggestionsContainer = body
+			.append("div")
+			.attr("id", "suggestions")
+			.attr(
+				"style",
+				"position: absolute; width: 90%; max-height: 150px; overflow-y: auto; background: white; border: 1px solid #ccc;"
+			);
+		suggestions.forEach((suggestion) => {
+			suggestionsContainer
+				.append("div")
+				.attr("style", "padding: 5px; cursor: pointer;")
+				.text(suggestion.full_name)
+				.on("click", () => {
+					input.property("value", suggestion.full_name);
+					d3.select("#suggestions").remove();
+					if (suggestion.id.startsWith("year-")) {
+						const selectedYear = parseInt(suggestion.id.split("-")[1]);
+						updateCharts(selectedYear, true);
+					} else {
+						updateCharts(suggestion.id, false);
+					}
+				});
+		});
+	}
+}
+
+let shotXScale, shotYScale;
+
+async function drawShotChart(svg, shotData) {
+	const shotChart = await svg
+		.append("g")
+		.attr("id", "shot_chart")
+		.attr("transform", `translate(${MARGIN.left}, ${MARGIN.top + MARGIN.top})`);
+	const allData = processShotData(shotData);
+	shotXScale = d3
+		.scaleBand()
+		.domain(allData.map((d) => d.SEASON))
+		.range([0, DEFAULT_CHART_WIDTH])
+		.padding(0.1);
+
+	shotYScale = d3
+		.scaleLinear()
+		.domain([0, 1])
+		.nice()
+		.range([DEFAULT_CHART_HEIGHT, 0]);
+
+	drawAxesAndLabels(
+		shotChart,
+		"Shooting Trends Over the Seasons",
+		shotXScale,
+		shotYScale,
+		"Seasons",
+		"Percentages"
+	);
+	drawLegend(shotChart, ["steelblue", "orange"], ["Shot %", "Contested %"]);
+	updateShotChart(shotData);
+}
+
+function updateShotChart(filteredData) {
+	const shotChart = d3.select("#shot_chart");
+
+	const processedData = processShotData(filteredData);
+
+	const shotLine = d3
+		.line()
+		.x((d) => shotXScale(d.SEASON) + shotXScale.bandwidth() / 2)
+		.y((d) => shotYScale(d.SHOT_PCT));
+
+	const contestLine = d3
+		.line()
+		.x((d) => shotXScale(d.SEASON) + shotXScale.bandwidth() / 2)
+		.y((d) => shotYScale(d.CONTEST_PCT));
+
+	shotChart
+		.selectAll(".shot-line")
+		.data([processedData])
+		.join(
+			(enter) =>
+				enter
+					.append("path")
+					.attr("class", "shot-line")
+					.attr("fill", "none")
+					.attr("stroke", "steelblue")
+					.attr("d", shotLine),
+
+			(update) => update.transition().duration(750).attr("d", shotLine),
+
+			(exit) => exit.remove()
+		);
+
+	shotChart
+		.selectAll(".contest-line")
+		.data([processedData])
+		.join(
+			(enter) =>
+				enter
+					.append("path")
+					.attr("class", "contest-line")
+					.attr("fill", "none")
+					.attr("stroke", "orange")
+					.attr("d", contestLine),
+
+			(update) => update.transition().duration(750).attr("d", contestLine),
+
+			(exit) => exit.remove()
+		);
+
+	const shotDots = shotChart
+		.selectAll(".shot-dot")
+		.data(processedData, (d) => d.SEASON)
+		.join(
+			(enter) =>
+				enter
+					.append("circle")
+					.attr("class", "shot-dot")
+					.attr("cx", (d) => shotXScale(d.SEASON) + shotXScale.bandwidth() / 2)
+					.attr("cy", (d) => shotYScale(d.SHOT_PCT))
+					.attr("r", 4)
+					.attr("fill", "steelblue")
+					.append("title")
+					.text(
+						(d) =>
+							`Year: ${d.SEASON}\nShot Percentage: ${(d.SHOT_PCT * 100).toFixed(
+								2
+							)}%`
+					),
+
+			(update) =>
+				update
+					.transition()
+					.duration(750)
+					.attr("cx", (d) => shotXScale(d.SEASON) + shotXScale.bandwidth() / 2)
+					.attr("cy", (d) => shotYScale(d.SHOT_PCT))
+					.each(function (d) {
+						d3.select(this)
+							.select("title")
+							.text(
+								`Year: ${d.SEASON}\nShot Percentage: ${(
+									d.SHOT_PCT * 100
+								).toFixed(2)}%`
+							);
+					}),
+
+			(exit) => exit.remove()
+		);
+
+	const contestDots = shotChart
+		.selectAll(".contest-dot")
+		.data(processedData, (d) => d.SEASON)
+		.join(
+			(enter) =>
+				enter
+					.append("circle")
+					.attr("class", "contest-dot")
+					.attr("cx", (d) => shotXScale(d.SEASON) + shotXScale.bandwidth() / 2)
+					.attr("cy", (d) => shotYScale(d.CONTEST_PCT))
+					.attr("r", 4)
+					.attr("fill", "orange")
+					.append("title")
+					.text(
+						(d) =>
+							`Year: ${d.SEASON}\nContested Shot Percentage: ${(
+								d.CONTEST_PCT * 100
+							).toFixed(2)}%`
+					),
+
+			(update) =>
+				update
+					.transition()
+					.duration(750)
+					.attr("cx", (d) => shotXScale(d.SEASON) + shotXScale.bandwidth() / 2)
+					.attr("cy", (d) => shotYScale(d.CONTEST_PCT))
+					.selection()
+					.each(function (d) {
+						d3.select(this)
+							.select("title")
+							.text(
+								`Year: ${d.SEASON}\nContested Shot Percentage: ${(
+									d.CONTEST_PCT * 100
+								).toFixed(2)}%`
+							);
+					}),
+
+			(exit) => exit.remove()
+		);
+}
+
+function processShotData(data) {
+	return d3
+		.flatGroup(data, (d) => d.SEASON)
+		.map((d) => ({
+			SEASON: d[0],
+			SHOT_PCT:
+				d3.sum(d[1], (e) => e.MADE_3PT) / d3.sum(d[1], (e) => e.ATTEMPTED_3PT),
+			CONTEST_PCT:
+				d3.sum(d[1], (e) => e.CONTESTED_3PT) /
+				d3.sum(d[1], (e) => e.ATTEMPTED_3PT),
+		}));
+}
+
+async function drawShotHeatmap(svg, shotsLocData) {
+	const heatmap = await svg
+		.append("g")
+		.attr("id", "court_chart")
+		.attr(
+			"transform",
+			`translate(${(VIEW_WIDTH - USABLE_WIDTH) / 2}, ${DEFAULT_CHART_HEIGHT})`
+		);
+
+	heatmap
+		.append("text")
+		.attr("x", USABLE_WIDTH / 2)
+		.attr("y", -MARGIN.top / 2)
+		.attr("text-anchor", "middle")
+		.attr("font-size", "16px")
+		.attr("font-weight", "bold")
+		.attr("stroke", "none")
+		.attr("fill", "black")
+		.text("Shot Hotspots Across the Court");
+
+	drawCourtOutline(heatmap);
+	drawHeatmap(heatmap, shotsLocData);
+}
+
+let efficiencyXScale, efficiencyYScale;
+
+async function drawEfficiencyChart(svg, efficiencyData) {
+	const efficiencyChart = await svg
+		.append("g")
+		.attr("id", "efficiency_chart")
+		.attr(
+			"transform",
+			`translate(${MARGIN.left}, ${
+				DEFAULT_CHART_HEIGHT + MARGIN.top + MARGIN.top + MARGIN.top + MARGIN.top
+			})`
+		);
+
+	const allData = efficiencyData.map((d) => ({
+		X_ID: d.X_ID,
+		SEASON: d.SEASON,
+		SHOT_PCT: d.MADE_3PT / d.ATTEMPTED_3PT,
+		CONTEST_PCT: d.CONTESTED_3PT / d.ATTEMPTED_3PT,
+	}));
+
+	efficiencyXScale = d3
+		.scaleLinear()
+		.domain([0, d3.max(allData, (d) => d.SHOT_PCT)])
+		.nice()
+		.range([0, DEFAULT_CHART_WIDTH]);
+
+	efficiencyYScale = d3
+		.scaleLinear()
+		.domain([0, d3.max(allData, (d) => d.CONTEST_PCT)])
+		.nice()
+		.range([DEFAULT_CHART_HEIGHT, 0]);
+
+	drawAxesAndLabels(
+		efficiencyChart,
+		"Shot Efficiency vs Defensive Pressure",
+		efficiencyXScale,
+		efficiencyYScale,
+		"Shot Efficiency",
+		"Contest Percentage"
+	);
+
+	updateEfficiencyChart(efficiencyData);
+}
+
+function updateEfficiencyChart(filteredData) {
+	const efficiencyChart = d3.select("#efficiency_chart");
+
+	const processedData = filteredData.map((d) => ({
+		X_ID: d.X_ID,
+		SEASON: d.SEASON,
+		SHOT_PCT: d.MADE_3PT / d.ATTEMPTED_3PT,
+		CONTEST_PCT: d.CONTESTED_3PT / d.ATTEMPTED_3PT,
+	}));
+
+	const dots = efficiencyChart
+		.selectAll(".efficiency-dot")
+		.data(processedData, (d) => d.X_ID)
+		.join(
+			(enter) =>
+				enter
+					.append("circle")
+					.attr("class", "efficiency-dot")
+					.attr("cx", (d) => efficiencyXScale(d.SHOT_PCT))
+					.attr("cy", (d) => efficiencyYScale(d.CONTEST_PCT))
+					.attr("r", 4)
+					.attr("fill", "steelblue"),
+
+			(update) =>
+				update
+					.transition()
+					.duration(750)
+					.attr("cx", (d) => efficiencyXScale(d.SHOT_PCT))
+					.attr("cy", (d) => efficiencyYScale(d.CONTEST_PCT)),
+
+			(exit) => exit.transition().duration(750).attr("r", 0).remove()
+		);
+
+	dots
+		.on("mouseover", function (event, d) {
+			d3.select(this).attr("stroke", "#333").attr("stroke-width", 2);
+		})
+		.on("mouseout", function () {
+			d3.select(this).attr("stroke", null);
+		});
+
+	dots
+		.append("title")
+		.text(
+			(d) =>
+				`ID: ${d.X_ID}\nYear: ${d.SEASON}\nShot Percentage: ${(
+					d.SHOT_PCT * 100
+				).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(
+					2
+				)}%`
+		);
+}
+let heatmapXScale, heatmapYScale;
+
+function drawHeatmap(court, shotsLocData) {
+	heatmapXScale = d3
+		.scaleLinear()
+		.range([0, USABLE_WIDTH - COURT_MARGINS * 2])
+		.domain([-250, 250]);
+	heatmapYScale = d3
+		.scaleLinear()
+		.range([0, (COURT_HEIGHT - COURT_MARGINS * 2) * 2])
+		.domain([-52, 888]);
+	const COURT_EXTENT = [
+		[0, 0],
+		[USABLE_WIDTH - COURT_MARGINS * 2, (COURT_HEIGHT - COURT_MARGINS * 2) * 2],
+	];
+
+	const hexbin = d3Hexbin()
+		.x((d) => heatmapXScale(d.LOC_X))
+		.y((d) => heatmapYScale(d.LOC_Y))
+		.extent(COURT_EXTENT)
+		.radius(4);
+	window.hexbinGenerator = hexbin;
+
+	updateHeatmap(shotsLocData);
+}
+
+function updateHeatmap(filteredData) {
+	const court = d3.select("#court_chart");
+
+	const bins = window.hexbinGenerator(
+		filteredData
+			.filter((d) => d.LOC_Y < 418)
+			.map((d) => ({
+				LOC_X: +d.LOC_X,
+				LOC_Y: +d.LOC_Y,
+				MADE: d.SHOT_MADE_FLAG,
+				ATTEMPTED: d.SHOT_ATTEMPTED_FLAG,
+			}))
+	);
+
+	bins.forEach((d) => {
+		d.total_made = d3.sum(d, (e) => e.MADE);
+		d.pct = d.total_made / d.length;
+	});
+
+	const maxPct = d3.max(bins, (d) => d.pct) || 1;
+	const minPct = d3.min(bins, (d) => d.pct) || 0;
+	const colorScale = d3
+		.scaleSequential(d3.interpolateRdYlBu)
+		.domain([minPct, maxPct]);
+
+	const hexagons = court
+		.selectAll(".hexagon")
+		.data(bins, (d) => `${d.x}-${d.y}`);
+
+	hexagons
+		.enter()
+		.append("path")
+		.attr("class", "hexagon")
+		.attr("d", window.hexbinGenerator.hexagon())
+		.attr("transform", (d) => `translate(${d.x},${d.y})`)
+		.attr("fill", (d) => colorScale(d.pct))
+		.attr("stroke", "white")
+		.attr("opacity", 0)
+		.transition()
+		.duration(500)
+		.attr("opacity", 0.7);
+
+	hexagons
+		.transition()
+		.duration(500)
+		.attr("transform", (d) => `translate(${d.x},${d.y})`)
+		.attr("fill", (d) => colorScale(d.pct));
+
+	hexagons.exit().transition().duration(500).attr("opacity", 0).remove();
+
+	court
+		.selectAll(".hexagon")
+		.on("mouseover", function (event, d) {
+			d3.select(this).attr("stroke", "#333").attr("stroke-width", 2);
+		})
+		.on("mouseout", function () {
+			d3.select(this).attr("stroke", "white");
+		});
+
+	court
+		.selectAll(".hexagon")
+		.append("title")
+		.text(
+			(d) =>
+				`Shot Percentage: ${(d.pct * 100).toFixed(2)}%\nAttempts: ${d.length}`
+		);
+
+	drawHeatmapLegend(court, colorScale, minPct, maxPct);
+}
+
+function drawHeatmapLegend(svg, colorScale, minPct, maxPct) {
+	const LEGEND_WIDTH = 200;
+	const LEGEND_HEIGHT = 20;
+
+	const legendScale = d3
+		.scaleLinear()
+		.domain([minPct, maxPct])
+		.range([0, LEGEND_WIDTH]);
+
+	const legend = svg
+		.append("g")
+		.attr(
+			"transform",
+			`translate(${
+				DEFAULT_CHART_WIDTH + MARGIN.left + MARGIN.left
+			}, ${SEARCH_HEIGHT})`
+		);
+
+	legend
+		.selectAll("rect")
+		.data(d3.range(minPct, maxPct, (maxPct - minPct) / 20))
+		.enter()
+		.append("rect")
+		.attr("x", (d) => legendScale(d))
+		.attr("width", 10)
+		.attr("height", LEGEND_HEIGHT)
+		.style("fill", (d) => colorScale(d));
+
+	legend
+		.append("text")
+		.attr("x", 0)
+		.attr("y", LEGEND_HEIGHT + 15)
+		.attr("text-anchor", "start")
+		.attr("fill", "black")
+		.attr("stroke", "none")
+		.text(`${(minPct * 100).toFixed(1)}%`);
+
+	legend
+		.append("text")
+		.attr("x", LEGEND_WIDTH)
+		.attr("y", LEGEND_HEIGHT + 15)
+		.attr("text-anchor", "end")
+		.attr("fill", "black")
+		.attr("stroke", "none")
+		.text(`${(maxPct * 100).toFixed(1)}%`);
+
+	legend
+		.append("text")
+		.attr("x", LEGEND_WIDTH / 2)
+		.attr("y", -5)
+		.attr("text-anchor", "middle")
+		.attr("fill", "black")
+		.attr("stroke", "none")
+		.text("Shot Accuracy %");
+}
+
+function renderLogo(svg) {
+	svg
+		.append("g")
+		.attr("class", "chart")
+		.attr("id", "auto_chart")
+		.attr(
+			"transform",
+			`translate(${(VIEW_WIDTH - MARGIN.left - MARGIN.right) / 2}, ${
+				MARGIN.top
+			})`
+		)
+		.append("image")
+		.attr(
+			"xlink:href",
+			"https://cdn.1min30.com/wp-content/uploads/2018/03/logo-NBA.jpg"
+		)
+		.attr("width", AUTO_WIDTH)
+		.attr("height", AUTO_HEIGHT);
+}
+
+// General function to draw Court Outline
+function drawCourtOutline(court) {
+	court.style("fill", "none").style("stroke", "#000");
+
+	const x_nba = d3
+		.scaleLinear()
+		.range([0, USABLE_WIDTH - COURT_MARGINS * 2])
+		.domain([-25, 25]);
+	const y_nba = d3
+		.scaleLinear()
+		.range([0, COURT_HEIGHT - COURT_MARGINS * 2])
+		.domain([0, 47]);
+
+	const arc = (radius, start, end) => {
+		const points = [...Array(30)].map((d, i) => i);
+		const angle = d3
+			.scaleLinear()
+			.domain([0, points.length - 1])
+			.range([start, end]);
+		return d3
+			.lineRadial()
+			.radius(radius)
+			.angle((d, i) => angle(i))(points);
+	};
+
+	const threeAngle = (Math.atan((10 - 0.75) / 22) * 180) / Math.PI;
+	const basket = y_nba(4);
+	const basketRadius = y_nba(4.75) - basket;
+	const pi = Math.PI / 180;
+
+	const elements = [
+		{
+			type: "circle",
+			attrs: [
+				["r", basketRadius],
+				["cx", x_nba(0)],
+				["cy", y_nba(4.75)],
+			],
+		},
+		{
+			type: "rect",
+			attrs: [
+				["x", x_nba(-3)],
+				["y", basket],
+				["width", x_nba(3) - x_nba(-3)],
+				["height", 1],
+			],
+		},
+		{
+			type: "rect",
+			attrs: [
+				["x", x_nba(-8)],
+				["y", y_nba(0)],
+				["width", x_nba(8) - x_nba(-8)],
+				["height", y_nba(15) + basket],
+			],
+		},
+		{
+			type: "rect",
+			attrs: [
+				["x", x_nba(-6)],
+				["y", y_nba(0)],
+				["width", x_nba(6) - x_nba(-6)],
+				["height", y_nba(15) + basket],
+			],
+		},
+		{
+			type: "path",
+			attrs: [
+				["d", arc(x_nba(4) - x_nba(0), 90 * pi, 270 * pi)],
+				["transform", `translate(${[x_nba(0), basket]})`],
+			],
+		},
+		{
+			type: "path",
+			attrs: [
+				["d", arc(x_nba(6) - x_nba(0), 90 * pi, 270 * pi)],
+				["transform", `translate(${[x_nba(0), y_nba(15) + basket]})`],
+			],
+		},
+		{
+			type: "path",
+			attrs: [
+				["d", arc(x_nba(6) - x_nba(0), -90 * pi, 90 * pi)],
+				["transform", `translate(${[x_nba(0), y_nba(15) + basket]})`],
+				["stroke-dasharray", "3,3"],
+			],
+		},
+		{
+			type: "line",
+			attrs: [
+				["x1", x_nba(-21.775)],
+				["x2", x_nba(-21.775)],
+				["y2", y_nba(14)],
+			],
+		},
+		{
+			type: "line",
+			attrs: [
+				["x1", x_nba(21.775)],
+				["x2", x_nba(21.775)],
+				["y2", y_nba(14)],
+			],
+		},
+		{
+			type: "path",
+			attrs: [
+				[
+					"d",
+					arc(y_nba(23.75), (threeAngle + 90) * pi, (270 - threeAngle) * pi),
+				],
+				["transform", `translate(${[x_nba(0), basket + basketRadius]})`],
+			],
+		},
+		{
+			type: "path",
+			attrs: [
+				["d", arc(x_nba(6) - x_nba(0), -90 * pi, 90 * pi)],
+				["transform", `translate(${[x_nba(0), y_nba(47)]})`],
+			],
+		},
+		{
+			type: "path",
+			attrs: [
+				["d", arc(x_nba(2) - x_nba(0), -90 * pi, 90 * pi)],
+				["transform", `translate(${[x_nba(0), y_nba(47)]})`],
+			],
+		},
+		{
+			type: "line",
+			attrs: [
+				["x1", x_nba(-25)],
+				["x2", x_nba(25)],
+				["y1", y_nba(47)],
+				["y2", y_nba(47)],
+			],
+		},
+		{
+			type: "rect",
+			attrs: [
+				["x", x_nba(-25)],
+				["y", y_nba(0)],
+				["width", x_nba(25)],
+				["height", y_nba(47)],
+				["stroke", "#ddd"],
+			],
+		},
+	];
+
+	elements.forEach(({ type, attrs }) => {
+		const elem = court.append(type);
+		attrs.forEach(([attrName, attrValue]) => {
+			elem.attr(attrName, attrValue);
+		});
+	});
+}
+
+/*--Utility Functions--*/
+
+function updateCharts(selectedId, isYear = false) {
+	const isTeam = window.data.teams.some((t) => t.id === selectedId);
+	const isPlayer = window.data.players.some((p) => p.id === selectedId);
+
+	let filteredData;
+	let filteredShots;
+	let url;
+	if (isYear) {
+		const selectedYear = parseInt(selectedId);
+		filteredData = window.data.shots_contested.filter(
+			(d) => d.SEASON === selectedYear
+		);
+		filteredShots = window.data.shots_loc.filter(
+			(d) => d.SEASON === selectedYear
+		);
+		url = "https://cdn.1min30.com/wp-content/uploads/2018/03/logo-NBA.jpg";
+	} else {
+		const isTeam = window.data.teams.some((t) => t.id === selectedId);
+		const isPlayer = window.data.players.some((p) => p.id === selectedId);
+
+		if (isTeam) {
+			filteredData = window.data.shots_contested.filter(
+				(d) => d.X_ID === parseInt(selectedId)
+			);
+			filteredShots = window.data.shots_loc.filter(
+				(d) => d.TEAM_ID === parseInt(selectedId)
+			);
+			url = `https://cdn.nba.com/logos/nba/${selectedId}/primary/L/logo.svg`;
+		} else if (isPlayer) {
+			filteredData = window.data.shots_contested.filter(
+				(d) => d.X_ID === parseInt(selectedId)
+			);
+			filteredShots = window.data.shots_loc.filter(
+				(d) => d.PLAYER_ID === parseInt(selectedId)
+			);
+			url = `https://cdn.nba.com/headshots/nba/latest/1040x760/${selectedId}.png`;
+		} else {
+			filteredData = window.data.shots_contested;
+			filteredShots = window.data.shots_loc;
+			url = "https://cdn.1min30.com/wp-content/uploads/2018/03/logo-NBA.jpg";
+		}
+	}
+
+	d3.select("#auto_chart").selectAll("image").attr("xlink:href", url);
+
+	updateEfficiencyChart(filteredData);
+	updateShotChart(filteredData);
+	updateHeatmap(filteredShots);
+}
+
+// General function to draw axes, labels, and title
+function drawAxesAndLabels(chart, titleText, xScale, yScale, xLabel, yLabel) {
+	chart
+		.append("g")
+		.attr("transform", `translate(0,${DEFAULT_CHART_HEIGHT})`)
+		.call(d3.axisBottom(xScale).ticks(5));
+
+	chart
+		.append("g")
+		.call(d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".0%")));
+
+	chart
+		.append("text")
+		.attr("x", DEFAULT_CHART_WIDTH / 2)
+		.attr("y", -MARGIN.top / 2)
+		.attr("text-anchor", "middle")
+		.attr("font-size", "16px")
+		.attr("font-weight", "bold")
+		.text(titleText);
+
+	chart
+		.append("text")
+		.attr("x", DEFAULT_CHART_WIDTH / 2)
+		.attr("y", DEFAULT_CHART_HEIGHT + MARGIN.bottom / 2)
+		.attr("text-anchor", "middle")
+		.text(xLabel);
+
+	chart
+		.append("text")
+		.attr("transform", "rotate(-90)")
+		.attr("y", -MARGIN.left / 1.5)
+		.attr("x", -DEFAULT_CHART_HEIGHT / 2)
+		.attr("text-anchor", "middle")
+		.text(yLabel);
+}
+
+// General function to draw a legend
+function drawLegend(chart, colors, labels) {
+	const legend = chart
+		.append("g")
+		.attr("transform", `translate(${DEFAULT_CHART_WIDTH}, 0)`);
+	colors.forEach((color, i) => {
+		legend
+			.append("rect")
+			.attr("width", 10)
+			.attr("height", 10)
+			.attr("fill", color)
+			.attr("y", i * 20);
+		legend
+			.append("text")
+			.attr("x", 15)
+			.attr("y", i * 20 + 10)
+			.text(labels[i]);
+	});
+}
+
+// Utility function to debounce input
+function debounce(func, wait) {
+	let timeout;
+	return function (...args) {
+		clearTimeout(timeout);
+		timeout = setTimeout(() => func.apply(this, args), wait);
+	};
+}
 ```
