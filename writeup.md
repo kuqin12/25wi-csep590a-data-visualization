@@ -72,7 +72,7 @@ Team Contributions
 
 The project took approximately () hours in total
 - Data collection & cleaning - 4 hours
-- Initial chart implementation - (Kun to add estimate)
+- Initial chart implementation - 5 hours
 - Interactivity - 3 hours
 - Final polishing & refactor - 4 hours
 
