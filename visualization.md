@@ -52,7 +52,7 @@ const COURT_MARGINS = 20;
 const COURT_HEIGHT = (USABLE_WIDTH / 50) * 47;
 ```
 
-```js echo
+```js
 import { hexbin as d3Hexbin } from "d3-hexbin";
 
 document.addEventListener("DOMContentLoaded", init);
