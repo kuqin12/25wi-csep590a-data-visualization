@@ -199,13 +199,13 @@ async function drawShotChart(svg, shotData) {
 
 	drawAxesAndLabels(
 		shotChart,
-		"Shooting Trends Over the Seasons",
+		"3PT Shooting Trends Over the Seasons",
 		shotXScale,
 		shotYScale,
 		"Seasons",
-		"Shooting Percentage"
+		"3PT Shooting Percentage"
 	);
-	drawLegend(shotChart, ["steelblue", "orange"], ["Shooting %", "Contested %"]);
+	drawLegend(shotChart, ["steelblue", "orange"], ["3PT Shooting %", "Contested %"]);
 	updateShotChart(shotData);
 }
 
@@ -275,7 +275,7 @@ function updateShotChart(filteredData) {
 							.append("title")
 							.text(
 								(d) =>
-									`Year: ${d.SEASON}\nShooting Percentage: ${(
+									`Year: ${d.SEASON}\n3PT Shooting Percentage: ${(
 										d.SHOT_PCT * 100
 									).toFixed(2)}%`
 							)
@@ -317,7 +317,7 @@ function updateShotChart(filteredData) {
 							.append("title")
 							.text(
 								(d) =>
-									`Year: ${d.SEASON}\nContested Shooting Percentage: ${(
+									`Year: ${d.SEASON}\nContested 3PT Shooting Percentage: ${(
 										d.CONTEST_PCT * 100
 									).toFixed(2)}%`
 							)
@@ -334,7 +334,7 @@ function updateShotChart(filteredData) {
 						d3.select(this)
 							.select("title")
 							.text(
-								`Year: ${d.SEASON}\nContested Shooting Percentage: ${(
+								`Year: ${d.SEASON}\nContested 3PT Shooting Percentage: ${(
 									d.CONTEST_PCT * 100
 								).toFixed(2)}%`
 							);
@@ -415,10 +415,10 @@ async function drawEfficiencyChart(svg, efficiencyData) {
 
 	drawAxesAndLabels(
 		efficiencyChart,
-		"Shooting Efficiency vs Defensive Pressure",
+		"3PT Shooting Efficiency vs Defensive Pressure",
 		efficiencyXScale,
 		efficiencyYScale,
-		"Shooting Efficiency Percentage",
+		"3PT Shooting Efficiency Percentage",
 		"Defensive Pressure Percentage",
 		true
 	);
@@ -453,7 +453,7 @@ function updateEfficiencyChart(filteredData) {
 							.append("title")
 							.text(
 								(d) =>
-									`ID: ${d.X_ID}\nYear: ${d.SEASON}\nShooting Percentage: ${(
+									`ID: ${d.X_ID}\nYear: ${d.SEASON}\n3PT Shooting Percentage: ${(
 										d.SHOT_PCT * 100
 									).toFixed(2)}%\nContest Percentage: ${(
 										d.CONTEST_PCT * 100
@@ -472,7 +472,7 @@ function updateEfficiencyChart(filteredData) {
 						d3.select(this)
 							.select("title")
 							.text(
-								`ID: ${d.X_ID}\nYear: ${d.SEASON}\nShooting Percentage: ${(
+								`ID: ${d.X_ID}\nYear: ${d.SEASON}\n3PT Shooting Percentage: ${(
 									d.SHOT_PCT * 100
 								).toFixed(2)}%\nContest Percentage: ${(
 									d.CONTEST_PCT * 100
@@ -653,7 +653,7 @@ function drawHeatmapLegend(svg, colorScale, minPct, maxPct) {
 		.attr("text-anchor", "middle")
 		.attr("fill", "black")
 		.attr("stroke", "none")
-		.text("Shooting Accuracy %");
+		.text("3PT Shooting Accuracy %");
 }
 
 function renderLogo(svg) {
