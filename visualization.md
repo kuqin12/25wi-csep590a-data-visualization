@@ -31,33 +31,33 @@ async function loadData() {
 
 // Function to create and show the loader
 function showLoader() {
-    const loader = document.createElement('div');
-    loader.id = 'loader';
-    loader.style.position = 'fixed';
-    loader.style.left = '50%';
-    loader.style.top = '50%';
-    loader.style.transform = 'translate(-50%, -50%)';
-    loader.style.border = '16px solid #f3f3f3';
-    loader.style.borderTop = '16px solid #3498db';
-    loader.style.borderRadius = '50%';
-    loader.style.width = '120px';
-    loader.style.height = '120px';
-    loader.style.animation = 'spin 2s linear infinite';
+	const loader = document.createElement("div");
+	loader.id = "loader";
+	loader.style.position = "fixed";
+	loader.style.left = "50%";
+	loader.style.top = "50%";
+	loader.style.transform = "translate(-50%, -50%)";
+	loader.style.border = "16px solid #f3f3f3";
+	loader.style.borderTop = "16px solid #3498db";
+	loader.style.borderRadius = "50%";
+	loader.style.width = "120px";
+	loader.style.height = "120px";
+	loader.style.animation = "spin 2s linear infinite";
 
-    const style = document.createElement('style');
-    style.type = 'text/css';
-    style.innerHTML = `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`;
-    document.getElementsByTagName('head')[0].appendChild(style);
+	const style = document.createElement("style");
+	style.type = "text/css";
+	style.innerHTML = `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`;
+	document.getElementsByTagName("head")[0].appendChild(style);
 
-    document.body.appendChild(loader);
+	document.body.appendChild(loader);
 }
 
 // Function to hide and remove the loader
 function hideLoader() {
-    const loader = document.getElementById('loader');
-    if (loader) {
-        loader.parentNode.removeChild(loader);
-    }
+	const loader = document.getElementById("loader");
+	if (loader) {
+		loader.parentNode.removeChild(loader);
+	}
 }
 
 // Show the loader before loading the CSV file
@@ -89,7 +89,6 @@ const COURT_HEIGHT = (USABLE_WIDTH / 50) * 47;
 
 ```js
 import { hexbin as d3Hexbin } from "d3-hexbin";
-import { regressionLinear as d3tl } from "d3-regression";
 
 document.addEventListener("DOMContentLoaded", init);
 
@@ -241,7 +240,11 @@ async function drawShotChart(svg, shotData) {
 		"Seasons",
 		"3PT Shooting Percentage"
 	);
-	drawLegend(shotChart, ["steelblue", "orange"], ["3PT Shooting %", "Contested %"]);
+	drawLegend(
+		shotChart,
+		["steelblue", "orange"],
+		["3PT Shooting %", "Contested %"]
+	);
 	updateShotChart(shotData);
 }
 
@@ -485,19 +488,31 @@ function updateEfficiencyChart(filteredData) {
 					.attr("r", 4)
 					.attr("fill", "steelblue")
 					.call((enter) =>
-						enter
-							.append("title")
-							.text(
-								(d) => {
-									const player = window.data.players.find((p) => parseInt(p.id) === d.X_ID);
-									const team = window.data.teams.find((t) => parseInt(t.id) === d.X_ID);
-									return player
-										? `Player: ${player.full_name}\nSeason: ${d.SEASON}\n3PT Shooting Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
-										: team
-										? `Team: ${team.full_name}\nSeason: ${d.SEASON}\n3PT Shooting Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
-										: `Season: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`;
-								}
-							)
+						enter.append("title").text((d) => {
+							const player = window.data.players.find(
+								(p) => parseInt(p.id) === d.X_ID
+							);
+							const team = window.data.teams.find(
+								(t) => parseInt(t.id) === d.X_ID
+							);
+							return player
+								? `Player: ${player.full_name}\nSeason: ${
+										d.SEASON
+								  }\n3PT Shooting Efficiency: ${(d.SHOT_PCT * 100).toFixed(
+										2
+								  )}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
+								: team
+								? `Team: ${team.full_name}\nSeason: ${
+										d.SEASON
+								  }\n3PT Shooting Efficiency: ${(d.SHOT_PCT * 100).toFixed(
+										2
+								  )}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
+								: `Season: ${d.SEASON}\nShot Efficiency: ${(
+										d.SHOT_PCT * 100
+								  ).toFixed(2)}%\nContest Percentage: ${(
+										d.CONTEST_PCT * 100
+								  ).toFixed(2)}%`;
+						})
 					),
 
 			(update) =>
@@ -508,20 +523,32 @@ function updateEfficiencyChart(filteredData) {
 					.attr("cy", (d) => efficiencyYScale(d.CONTEST_PCT))
 					.selection()
 					.each(function (d) {
-						const player = window.data.players.find((p) => parseInt(p.id) === d.X_ID);
-						const team = window.data.teams.find((t) => parseInt(t.id) === d.X_ID);
+						const player = window.data.players.find(
+							(p) => parseInt(p.id) === d.X_ID
+						);
+						const team = window.data.teams.find(
+							(t) => parseInt(t.id) === d.X_ID
+						);
 
 						const id_str = player
-										? `Player: ${player.full_name}\nSeason: ${d.SEASON}\n3PT Shooting Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
-										: team
-										? `Team: ${team.full_name}\nSeason: ${d.SEASON}\n3PT Shooting Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
-										: `Season: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`;
+							? `Player: ${player.full_name}\nSeason: ${
+									d.SEASON
+							  }\n3PT Shooting Efficiency: ${(d.SHOT_PCT * 100).toFixed(
+									2
+							  )}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
+							: team
+							? `Team: ${team.full_name}\nSeason: ${
+									d.SEASON
+							  }\n3PT Shooting Efficiency: ${(d.SHOT_PCT * 100).toFixed(
+									2
+							  )}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
+							: `Season: ${d.SEASON}\nShot Efficiency: ${(
+									d.SHOT_PCT * 100
+							  ).toFixed(2)}%\nContest Percentage: ${(
+									d.CONTEST_PCT * 100
+							  ).toFixed(2)}%`;
 
-						d3.select(this)
-							.select("title")
-							.text(
-								id_str
-							);
+						d3.select(this).select("title").text(id_str);
 					}),
 
 			(exit) => exit.transition().duration(750).attr("r", 0).remove()
@@ -535,21 +562,7 @@ function updateEfficiencyChart(filteredData) {
 			d3.select(this).attr("stroke", null);
 		});
 
-	// Draw the regression line
-	const regression = d3tl()
-		.x((d) => d.SHOT_PCT)
-		.y((d) => d.CONTEST_PCT)
-		.domain([
-            0,
-			d3.max(processedData, (d) => d.SHOT_PCT),
-			0,
-			d3.max(processedData, (d) => d.CONTEST_PCT),
-		])
-		.threshold(0.5);
-            display(regressionData);
-
-	const regressionData = regression(processedData);
-
+	const { regressionData, equation } = computeLinearRegression(processedData);
 
 	efficiencyChart
 		.selectAll(".regression-line")
@@ -561,35 +574,50 @@ function updateEfficiencyChart(filteredData) {
 					.attr("class", "regression-line")
 					.attr("fill", "none")
 					.attr("stroke", "red")
-					.attr("d", d3.line()
-						.x((d) => efficiencyXScale(d[0]))
-						.y((d) => efficiencyYScale(d[1]))
+					.attr("stroke-width", 2)
+					.attr(
+						"d",
+						d3
+							.line()
+							.x((d) => efficiencyXScale(d[0]))
+							.y((d) => efficiencyYScale(d[1]))
 					),
 
 			(update) =>
 				update
 					.transition()
 					.duration(750)
-					.attr("d", d3.line()
-						.x((d) => efficiencyXScale(d[0]))
-						.y((d) => efficiencyYScale(d[1]))
+					.attr(
+						"d",
+						d3
+							.line()
+							.x((d) => efficiencyXScale(d[0]))
+							.y((d) => efficiencyYScale(d[1]))
 					),
 
 			(exit) => exit.remove()
 		);
 
-	// Draw the regression equation
-	const slope = regressionData[1][1] - regressionData[0][1];
-	const intercept = regressionData[0][1] - slope * regressionData[0][0];
-	const equation = `y = ${slope.toFixed(2)}x + ${intercept.toFixed(2)}`;
+	// Update Regression Equation
 	efficiencyChart
-		.append("text")
-		.attr("x", DEFAULT_CHART_WIDTH - 100)
-		.attr("y", 20)
-		.attr("text-anchor", "end")
-		.attr("font-size", "14px")
-		.attr("fill", "red")
-		.text(equation);
+		.selectAll(".regression-equation")
+		.data([equation])
+		.join(
+			(enter) =>
+				enter
+					.append("text")
+					.attr("class", "regression-equation")
+					.attr("x", DEFAULT_CHART_WIDTH - 150)
+					.attr("y", 20)
+					.attr("text-anchor", "end")
+					.attr("font-size", "14px")
+					.attr("fill", "red")
+					.text(equation),
+
+			(update) => update.text(equation),
+
+			(exit) => exit.remove()
+		);
 }
 let heatmapXScale, heatmapYScale;
 
@@ -663,9 +691,9 @@ function updateHeatmap(filteredData) {
 							.append("title")
 							.text(
 								(d) =>
-									`Shooting Percentage: ${(d.pct * 100).toFixed(2)}%\nAttempts: ${
-										d.length
-									}`
+									`Shooting Percentage: ${(d.pct * 100).toFixed(
+										2
+									)}%\nAttempts: ${d.length}`
 							)
 					),
 
@@ -1062,6 +1090,29 @@ function debounce(func, wait) {
 	return function (...args) {
 		clearTimeout(timeout);
 		timeout = setTimeout(() => func.apply(this, args), wait);
+	};
+}
+
+function computeLinearRegression(data) {
+	const n = data.length;
+	const sumX = d3.sum(data, (d) => d.SHOT_PCT);
+	const sumY = d3.sum(data, (d) => d.CONTEST_PCT);
+	const sumXY = d3.sum(data, (d) => d.SHOT_PCT * d.CONTEST_PCT);
+	const sumX2 = d3.sum(data, (d) => d.SHOT_PCT ** 2);
+
+	const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX ** 2);
+	const intercept = (sumY - slope * sumX) / n;
+
+	const minX = d3.min(data, (d) => d.SHOT_PCT);
+	const maxX = d3.max(data, (d) => d.SHOT_PCT);
+	const regressionData = [
+		[minX, slope * minX + intercept],
+		[maxX, slope * maxX + intercept],
+	];
+
+	return {
+		regressionData,
+		equation: `y = ${slope.toFixed(2)}x + ${intercept.toFixed(2)}`,
 	};
 }
 ```
