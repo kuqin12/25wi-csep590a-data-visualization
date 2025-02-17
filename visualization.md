@@ -66,7 +66,7 @@ showLoader();
 loadData().then((data) => {
 	console.log("Data Loaded:", data);
 	window.data = data;
-    hideLoader();
+	hideLoader();
 	init();
 });
 ```
