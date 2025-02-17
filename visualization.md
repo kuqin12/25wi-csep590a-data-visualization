@@ -45,8 +45,8 @@ const DEFAULT_CHART_HEIGHT = VIEW_HEIGHT / 2 - MARGIN.top - MARGIN.bottom;
 const COURT_WIDTH = VIEW_WIDTH * 0.4;
 const SEARCH_WIDTH = VIEW_WIDTH * 0.3;
 const SEARCH_HEIGHT = 200;
-const AUTO_WIDTH = SEARCH_WIDTH;
-const AUTO_HEIGHT = VIEW_HEIGHT - SEARCH_HEIGHT;
+const AUTO_WIDTH = 100;
+const AUTO_HEIGHT = 100;
 const USABLE_WIDTH = Math.min(500, COURT_WIDTH);
 const COURT_MARGINS = 20;
 const COURT_HEIGHT = (USABLE_WIDTH / 50) * 47;
@@ -67,6 +67,7 @@ function init() {
 	drawShotChart(svg, window.data.shots_contested);
 	drawEfficiencyChart(svg, window.data.shots_contested);
 	drawShotHeatmap(svg, window.data.shots_loc);
+	renderLogo(svg);
 
 	display(svg.node());
 }
@@ -257,7 +258,7 @@ function drawShotHeatmap(svg, shotsLocData) {
 		.attr(
 			"transform",
 			`translate(${
-				DEFAULT_CHART_WIDTH + MARGIN.left + MARGIN.left
+				DEFAULT_CHART_WIDTH + MARGIN.left + MARGIN.left + MARGIN.left
 			}, ${DEFAULT_CHART_HEIGHT})`
 		);
 
@@ -441,6 +442,24 @@ function drawHeatmapLegend(svg, colorScale, minPct, maxPct) {
 		.attr("y", LEGEND_HEIGHT + 15)
 		.attr("text-anchor", "end")
 		.text(`${(maxPct * 100).toFixed(1)}%`);
+}
+
+function renderLogo(svg) {
+	svg
+		.append("g")
+		.attr("class", "chart")
+		.attr("id", "auto_chart")
+		.attr(
+			"transform",
+			`translate(${(VIEW_WIDTH - MARGIN.left - MARGIN.right) / 2}, 0)`
+		)
+		.append("image")
+		.attr(
+			"xlink:href",
+			"https://cdn.1min30.com/wp-content/uploads/2018/03/logo-NBA.jpg"
+		)
+		.attr("width", AUTO_WIDTH)
+		.attr("height", AUTO_HEIGHT);
 }
 
 // General function to draw Court Outline
