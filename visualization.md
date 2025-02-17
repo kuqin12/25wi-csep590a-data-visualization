@@ -70,7 +70,7 @@ function init() {
 		.attr("text-anchor", "middle")
 		.attr("font-size", "24px")
 		.attr("font-weight", "bold")
-		.text("NBA Shot Insights: Trends, Efficiency & Court Hotspots");
+		.text("NBA Shooting Insights: Trends, Efficiency & Court Hotspots");
 
 	drawSelector(svg);
 	drawShotChart(svg, window.data.shots_contested);
@@ -203,9 +203,9 @@ async function drawShotChart(svg, shotData) {
 		shotXScale,
 		shotYScale,
 		"Seasons",
-		"Percentages"
+		"Shooting Percentage"
 	);
-	drawLegend(shotChart, ["steelblue", "orange"], ["Shot %", "Contested %"]);
+	drawLegend(shotChart, ["steelblue", "orange"], ["Shooting %", "Contested %"]);
 	updateShotChart(shotData);
 }
 
@@ -275,7 +275,7 @@ function updateShotChart(filteredData) {
 							.append("title")
 							.text(
 								(d) =>
-									`Year: ${d.SEASON}\nShot Percentage: ${(
+									`Year: ${d.SEASON}\nShooting Percentage: ${(
 										d.SHOT_PCT * 100
 									).toFixed(2)}%`
 							)
@@ -317,7 +317,7 @@ function updateShotChart(filteredData) {
 							.append("title")
 							.text(
 								(d) =>
-									`Year: ${d.SEASON}\nContested Shot Percentage: ${(
+									`Year: ${d.SEASON}\nContested Shooting Percentage: ${(
 										d.CONTEST_PCT * 100
 									).toFixed(2)}%`
 							)
@@ -334,7 +334,7 @@ function updateShotChart(filteredData) {
 						d3.select(this)
 							.select("title")
 							.text(
-								`Year: ${d.SEASON}\nContested Shot Percentage: ${(
+								`Year: ${d.SEASON}\nContested Shooting Percentage: ${(
 									d.CONTEST_PCT * 100
 								).toFixed(2)}%`
 							);
@@ -375,7 +375,7 @@ async function drawShotHeatmap(svg, shotsLocData) {
 		.attr("font-weight", "bold")
 		.attr("stroke", "none")
 		.attr("fill", "black")
-		.text("Shot Hotspots Across the Court");
+		.text("Shooting Hotspots Across the Court");
 
 	drawCourtOutline(heatmap);
 	drawHeatmap(heatmap, shotsLocData);
@@ -415,10 +415,10 @@ async function drawEfficiencyChart(svg, efficiencyData) {
 
 	drawAxesAndLabels(
 		efficiencyChart,
-		"Shot Efficiency vs Defensive Pressure",
+		"Shooting Efficiency vs Defensive Pressure",
 		efficiencyXScale,
 		efficiencyYScale,
-		"Shot Efficiency Percentage",
+		"Shooting Efficiency Percentage",
 		"Defensive Pressure Percentage",
 		true
 	);
@@ -453,7 +453,7 @@ function updateEfficiencyChart(filteredData) {
 							.append("title")
 							.text(
 								(d) =>
-									`ID: ${d.X_ID}\nYear: ${d.SEASON}\nShot Percentage: ${(
+									`ID: ${d.X_ID}\nYear: ${d.SEASON}\nShooting Percentage: ${(
 										d.SHOT_PCT * 100
 									).toFixed(2)}%\nContest Percentage: ${(
 										d.CONTEST_PCT * 100
@@ -472,7 +472,7 @@ function updateEfficiencyChart(filteredData) {
 						d3.select(this)
 							.select("title")
 							.text(
-								`ID: ${d.X_ID}\nYear: ${d.SEASON}\nShot Percentage: ${(
+								`ID: ${d.X_ID}\nYear: ${d.SEASON}\nShooting Percentage: ${(
 									d.SHOT_PCT * 100
 								).toFixed(2)}%\nContest Percentage: ${(
 									d.CONTEST_PCT * 100
@@ -563,7 +563,7 @@ function updateHeatmap(filteredData) {
 							.append("title")
 							.text(
 								(d) =>
-									`Shot Percentage: ${(d.pct * 100).toFixed(2)}%\nAttempts: ${
+									`Shooting Percentage: ${(d.pct * 100).toFixed(2)}%\nAttempts: ${
 										d.length
 									}`
 							)
@@ -580,7 +580,7 @@ function updateHeatmap(filteredData) {
 						d3.select(this)
 							.select("title")
 							.text(
-								`Shot Percentage: ${(d.pct * 100).toFixed(2)}%\nAttempts: ${
+								`Shooting Percentage: ${(d.pct * 100).toFixed(2)}%\nAttempts: ${
 									d.length
 								}`
 							);
@@ -653,7 +653,7 @@ function drawHeatmapLegend(svg, colorScale, minPct, maxPct) {
 		.attr("text-anchor", "middle")
 		.attr("fill", "black")
 		.attr("stroke", "none")
-		.text("Shot Accuracy %");
+		.text("Shooting Accuracy %");
 }
 
 function renderLogo(svg) {
