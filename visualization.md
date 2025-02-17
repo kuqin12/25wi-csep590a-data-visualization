@@ -89,6 +89,7 @@ const COURT_HEIGHT = (USABLE_WIDTH / 50) * 47;
 
 ```js
 import { hexbin as d3Hexbin } from "d3-hexbin";
+import { regressionLinear as d3tl } from "d3-regression";
 
 document.addEventListener("DOMContentLoaded", init);
 
@@ -534,6 +535,61 @@ function updateEfficiencyChart(filteredData) {
 			d3.select(this).attr("stroke", null);
 		});
 
+	// Draw the regression line
+	const regression = d3tl()
+		.x((d) => d.SHOT_PCT)
+		.y((d) => d.CONTEST_PCT)
+		.domain([
+            0,
+			d3.max(processedData, (d) => d.SHOT_PCT),
+			0,
+			d3.max(processedData, (d) => d.CONTEST_PCT),
+		])
+		.threshold(0.5);
+            display(regressionData);
+
+	const regressionData = regression(processedData);
+
+
+	efficiencyChart
+		.selectAll(".regression-line")
+		.data([regressionData])
+		.join(
+			(enter) =>
+				enter
+					.append("path")
+					.attr("class", "regression-line")
+					.attr("fill", "none")
+					.attr("stroke", "red")
+					.attr("d", d3.line()
+						.x((d) => efficiencyXScale(d[0]))
+						.y((d) => efficiencyYScale(d[1]))
+					),
+
+			(update) =>
+				update
+					.transition()
+					.duration(750)
+					.attr("d", d3.line()
+						.x((d) => efficiencyXScale(d[0]))
+						.y((d) => efficiencyYScale(d[1]))
+					),
+
+			(exit) => exit.remove()
+		);
+
+	// Draw the regression equation
+	const slope = regressionData[1][1] - regressionData[0][1];
+	const intercept = regressionData[0][1] - slope * regressionData[0][0];
+	const equation = `y = ${slope.toFixed(2)}x + ${intercept.toFixed(2)}`;
+	efficiencyChart
+		.append("text")
+		.attr("x", DEFAULT_CHART_WIDTH - 100)
+		.attr("y", 20)
+		.attr("text-anchor", "end")
+		.attr("font-size", "14px")
+		.attr("fill", "red")
+		.text(equation);
 }
 let heatmapXScale, heatmapYScale;
 
