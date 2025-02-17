@@ -5,7 +5,7 @@ toc: false
 
 # Interactive Visualization Submission
 
-```js echo
+```js
 async function loadData() {
 	const BASE_URL =
 		"https://media.githubusercontent.com/media/kuqin12/25wi-csep590a-data-visualization/refs/heads/main/";
@@ -36,7 +36,7 @@ loadData().then((data) => {
 });
 ```
 
-```js echo
+```js
 const VIEW_WIDTH = 1500;
 const VIEW_HEIGHT = 700;
 const MARGIN = { top: 50, right: 50, bottom: 80, left: 80 };
@@ -107,10 +107,10 @@ function drawSelector(svg) {
 		.attr(
 			"style",
 			`
-			width: 80%; 
+			width: 80%;
             height: 30px;
             font-size: 14px;
-            padding: 5px; 
+            padding: 5px;
             border: 1px solid #ccc;
             border-radius: 5px;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
@@ -270,12 +270,15 @@ function updateShotChart(filteredData) {
 					.attr("cy", (d) => shotYScale(d.SHOT_PCT))
 					.attr("r", 4)
 					.attr("fill", "steelblue")
-					.append("title")
-					.text(
-						(d) =>
-							`Year: ${d.SEASON}\nShot Percentage: ${(d.SHOT_PCT * 100).toFixed(
-								2
-							)}%`
+					.call((enter) =>
+						enter
+							.append("title")
+							.text(
+								(d) =>
+									`Year: ${d.SEASON}\nShot Percentage: ${(
+										d.SHOT_PCT * 100
+									).toFixed(2)}%`
+							)
 					),
 
 			(update) =>
@@ -309,12 +312,15 @@ function updateShotChart(filteredData) {
 					.attr("cy", (d) => shotYScale(d.CONTEST_PCT))
 					.attr("r", 4)
 					.attr("fill", "orange")
-					.append("title")
-					.text(
-						(d) =>
-							`Year: ${d.SEASON}\nContested Shot Percentage: ${(
-								d.CONTEST_PCT * 100
-							).toFixed(2)}%`
+					.call((enter) =>
+						enter
+							.append("title")
+							.text(
+								(d) =>
+									`Year: ${d.SEASON}\nContested Shot Percentage: ${(
+										d.CONTEST_PCT * 100
+									).toFixed(2)}%`
+							)
 					),
 
 			(update) =>
@@ -412,8 +418,9 @@ async function drawEfficiencyChart(svg, efficiencyData) {
 		"Shot Efficiency vs Defensive Pressure",
 		efficiencyXScale,
 		efficiencyYScale,
-		"Shot Efficiency",
-		"Contest Percentage"
+		"Shot Efficiency Percentage",
+		"Defensive Pressure Percentage",
+		true
 	);
 
 	updateEfficiencyChart(efficiencyData);
@@ -440,14 +447,38 @@ function updateEfficiencyChart(filteredData) {
 					.attr("cx", (d) => efficiencyXScale(d.SHOT_PCT))
 					.attr("cy", (d) => efficiencyYScale(d.CONTEST_PCT))
 					.attr("r", 4)
-					.attr("fill", "steelblue"),
+					.attr("fill", "steelblue")
+					.call((enter) =>
+						enter
+							.append("title")
+							.text(
+								(d) =>
+									`ID: ${d.X_ID}\nYear: ${d.SEASON}\nShot Percentage: ${(
+										d.SHOT_PCT * 100
+									).toFixed(2)}%\nContest Percentage: ${(
+										d.CONTEST_PCT * 100
+									).toFixed(2)}%`
+							)
+					),
 
 			(update) =>
 				update
 					.transition()
 					.duration(750)
 					.attr("cx", (d) => efficiencyXScale(d.SHOT_PCT))
-					.attr("cy", (d) => efficiencyYScale(d.CONTEST_PCT)),
+					.attr("cy", (d) => efficiencyYScale(d.CONTEST_PCT))
+					.selection()
+					.each(function (d) {
+						d3.select(this)
+							.select("title")
+							.text(
+								`ID: ${d.X_ID}\nYear: ${d.SEASON}\nShot Percentage: ${(
+									d.SHOT_PCT * 100
+								).toFixed(2)}%\nContest Percentage: ${(
+									d.CONTEST_PCT * 100
+								).toFixed(2)}%`
+							);
+					}),
 
 			(exit) => exit.transition().duration(750).attr("r", 0).remove()
 		);
@@ -459,17 +490,6 @@ function updateEfficiencyChart(filteredData) {
 		.on("mouseout", function () {
 			d3.select(this).attr("stroke", null);
 		});
-
-	dots
-		.append("title")
-		.text(
-			(d) =>
-				`ID: ${d.X_ID}\nYear: ${d.SEASON}\nShot Percentage: ${(
-					d.SHOT_PCT * 100
-				).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(
-					2
-				)}%`
-		);
 }
 let heatmapXScale, heatmapYScale;
 
@@ -524,45 +544,58 @@ function updateHeatmap(filteredData) {
 
 	const hexagons = court
 		.selectAll(".hexagon")
-		.data(bins, (d) => `${d.x}-${d.y}`);
+		.data(bins, (d) => `${d.x}-${d.y}`)
+		.join(
+			(enter) =>
+				enter
+					.append("path")
+					.attr("class", "hexagon")
+					.attr("d", window.hexbinGenerator.hexagon())
+					.attr("transform", (d) => `translate(${d.x},${d.y})`)
+					.attr("fill", (d) => colorScale(d.pct))
+					.attr("stroke", "white")
+					.attr("opacity", 0)
+					.call((enter) =>
+						enter.transition().duration(500).attr("opacity", 0.7)
+					)
+					.call((enter) =>
+						enter
+							.append("title")
+							.text(
+								(d) =>
+									`Shot Percentage: ${(d.pct * 100).toFixed(2)}%\nAttempts: ${
+										d.length
+									}`
+							)
+					),
+
+			(update) =>
+				update
+					.transition()
+					.duration(500)
+					.attr("transform", (d) => `translate(${d.x},${d.y})`)
+					.attr("fill", (d) => colorScale(d.pct))
+					.selection()
+					.each(function (d) {
+						d3.select(this)
+							.select("title")
+							.text(
+								`Shot Percentage: ${(d.pct * 100).toFixed(2)}%\nAttempts: ${
+									d.length
+								}`
+							);
+					}),
+
+			(exit) => exit.transition().duration(500).attr("opacity", 0).remove()
+		);
 
 	hexagons
-		.enter()
-		.append("path")
-		.attr("class", "hexagon")
-		.attr("d", window.hexbinGenerator.hexagon())
-		.attr("transform", (d) => `translate(${d.x},${d.y})`)
-		.attr("fill", (d) => colorScale(d.pct))
-		.attr("stroke", "white")
-		.attr("opacity", 0)
-		.transition()
-		.duration(500)
-		.attr("opacity", 0.7);
-
-	hexagons
-		.transition()
-		.duration(500)
-		.attr("transform", (d) => `translate(${d.x},${d.y})`)
-		.attr("fill", (d) => colorScale(d.pct));
-
-	hexagons.exit().transition().duration(500).attr("opacity", 0).remove();
-
-	court
-		.selectAll(".hexagon")
 		.on("mouseover", function (event, d) {
 			d3.select(this).attr("stroke", "#333").attr("stroke-width", 2);
 		})
 		.on("mouseout", function () {
 			d3.select(this).attr("stroke", "white");
 		});
-
-	court
-		.selectAll(".hexagon")
-		.append("title")
-		.text(
-			(d) =>
-				`Shot Percentage: ${(d.pct * 100).toFixed(2)}%\nAttempts: ${d.length}`
-		);
 
 	drawHeatmapLegend(court, colorScale, minPct, maxPct);
 }
@@ -853,11 +886,26 @@ function updateCharts(selectedId, isYear = false) {
 }
 
 // General function to draw axes, labels, and title
-function drawAxesAndLabels(chart, titleText, xScale, yScale, xLabel, yLabel) {
-	chart
-		.append("g")
-		.attr("transform", `translate(0,${DEFAULT_CHART_HEIGHT})`)
-		.call(d3.axisBottom(xScale).ticks(5));
+function drawAxesAndLabels(
+	chart,
+	titleText,
+	xScale,
+	yScale,
+	xLabel,
+	yLabel,
+	isPercent
+) {
+	if (isPercent) {
+		chart
+			.append("g")
+			.attr("transform", `translate(0,${DEFAULT_CHART_HEIGHT})`)
+			.call(d3.axisBottom(xScale).ticks(5).tickFormat(d3.format(".0%")));
+	} else {
+		chart
+			.append("g")
+			.attr("transform", `translate(0,${DEFAULT_CHART_HEIGHT})`)
+			.call(d3.axisBottom(xScale).ticks(5));
+	}
 
 	chart
 		.append("g")
