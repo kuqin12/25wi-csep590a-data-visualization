@@ -121,134 +121,165 @@ function drawSelector(svg) {
 				.on("click", () => {
 					input.property("value", suggestion.full_name);
 					d3.select("#suggestions").remove();
-					// updateCharts(suggestion.id);
+					updateCharts(suggestion.id);
 				});
 		});
 	}
 }
 
-function drawShotChart(svg, shotData) {
-	const shotChart = svg
+let shotXScale, shotYScale;
+
+async function drawShotChart(svg, shotData) {
+	const shotChart = await svg
 		.append("g")
 		.attr("id", "shot_chart")
 		.attr("transform", `translate(${MARGIN.left}, ${MARGIN.top})`);
-	const processedData = processShotData(shotData);
-	const xScale = d3
+	const allData = processShotData(shotData);
+	shotXScale = d3
 		.scaleBand()
-		.domain(processedData.map((d) => d.SEASON))
+		.domain(allData.map((d) => d.SEASON))
 		.range([0, DEFAULT_CHART_WIDTH])
 		.padding(0.1);
 
-	const yScale = d3
+	shotYScale = d3
 		.scaleLinear()
-		.domain([0, 0.8])
+		.domain([0, 1])
 		.nice()
 		.range([DEFAULT_CHART_HEIGHT, 0]);
 
-	drawShotLines(shotChart, processedData, xScale, yScale);
-	drawShotDots(
-		shotChart,
-		processedData,
-		xScale,
-		yScale,
-		"steelblue",
-		"Shot Percentage"
-	);
-	drawShotDots(
-		shotChart,
-		processedData,
-		xScale,
-		yScale,
-		"orange",
-		"Contested Percentage",
-		true
-	);
 	drawAxesAndLabels(
 		shotChart,
 		"Shot Percentage and Contested Percentage Over Seasons",
-		xScale,
-		yScale,
+		shotXScale,
+		shotYScale,
 		"Seasons",
 		"Percentages"
 	);
 	drawLegend(shotChart, ["steelblue", "orange"], ["Shot %", "Contested %"]);
-
-	function processShotData(data) {
-		return d3
-			.flatGroup(data, (d) => d.SEASON)
-			.map((d) => ({
-				SEASON: d[0],
-				SHOT_PCT:
-					d3.sum(d[1], (e) => e.MADE_3PT) /
-					d3.sum(d[1], (e) => e.ATTEMPTED_3PT),
-				CONTEST_PCT:
-					d3.sum(d[1], (e) => e.CONTESTED_3PT) /
-					d3.sum(d[1], (e) => e.ATTEMPTED_3PT),
-			}));
-	}
-
-	function drawShotLines(chart, data, xScale, yScale) {
-		chart
-			.append("path")
-			.datum(data)
-			.attr("fill", "none")
-			.attr("stroke", "steelblue")
-			.attr(
-				"d",
-				d3
-					.line()
-					.x((d) => xScale(d.SEASON) + xScale.bandwidth() / 2)
-					.y((d) => yScale(d.SHOT_PCT))
-			);
-		chart
-			.append("path")
-			.datum(data)
-			.attr("fill", "none")
-			.attr("stroke", "orange")
-			.attr(
-				"d",
-				d3
-					.line()
-					.x((d) => xScale(d.SEASON) + xScale.bandwidth() / 2)
-					.y((d) => yScale(d.CONTEST_PCT))
-			);
-	}
+	updateShotChart(shotData);
 }
 
-function drawShotDots(
-	chart,
-	data,
-	xScale,
-	yScale,
-	color,
-	tooltipText,
-	isContested = false
-) {
-	const dots = chart
-		.selectAll(`circle.${isContested ? "contested" : "shot"}`)
-		.data(data)
-		.enter()
-		.append("circle")
-		.attr("class", isContested ? "contested" : "shot")
-		.attr("cx", (d) => xScale(d.SEASON) + xScale.bandwidth() / 2)
-		.attr("cy", (d) => yScale(d[isContested ? "CONTEST_PCT" : "SHOT_PCT"]))
-		.attr("r", 4)
-		.attr("fill", color)
-		.on("mouseover", function (event, d) {
-			d3.select(this).attr("stroke", "#333").attr("stroke-width", 2);
-		})
-		.on("mouseout", function () {
-			d3.select(this).attr("stroke", null);
-		});
+function updateShotChart(filteredData) {
+	const shotChart = d3.select("#shot_chart");
 
-	dots
-		.append("title")
-		.text(
-			(d) =>
-				`Year: ${d.SEASON}\n${tooltipText}: ${(
-					d[isContested ? "CONTEST_PCT" : "SHOT_PCT"] * 100
-				).toFixed(2)}%`
+	const processedData = processShotData(filteredData);
+
+	const shotLine = d3
+		.line()
+		.x((d) => shotXScale(d.SEASON) + shotXScale.bandwidth() / 2)
+		.y((d) => shotYScale(d.SHOT_PCT));
+
+	const contestLine = d3
+		.line()
+		.x((d) => shotXScale(d.SEASON) + shotXScale.bandwidth() / 2)
+		.y((d) => shotYScale(d.CONTEST_PCT));
+
+	shotChart
+		.selectAll(".shot-line")
+		.data([processedData])
+		.join(
+			(enter) =>
+				enter
+					.append("path")
+					.attr("class", "shot-line")
+					.attr("fill", "none")
+					.attr("stroke", "steelblue")
+					.attr("d", shotLine),
+
+			(update) => update.transition().duration(750).attr("d", shotLine),
+
+			(exit) => exit.remove()
 		);
+
+	shotChart
+		.selectAll(".contest-line")
+		.data([processedData])
+		.join(
+			(enter) =>
+				enter
+					.append("path")
+					.attr("class", "contest-line")
+					.attr("fill", "none")
+					.attr("stroke", "orange")
+					.attr("d", contestLine),
+
+			(update) => update.transition().duration(750).attr("d", contestLine),
+
+			(exit) => exit.remove()
+		);
+
+	const shotDots = shotChart
+		.selectAll(".shot-dot")
+		.data(processedData, (d) => d.SEASON)
+		.join(
+			(enter) =>
+				enter
+					.append("circle")
+					.attr("class", "shot-dot")
+					.attr("cx", (d) => shotXScale(d.SEASON) + shotXScale.bandwidth() / 2)
+					.attr("cy", (d) => shotYScale(d.SHOT_PCT))
+					.attr("r", 4)
+					.attr("fill", "steelblue")
+					.append("title")
+					.text(
+						(d) =>
+							`Year: ${d.SEASON}\nShot Percentage: ${(d.SHOT_PCT * 100).toFixed(
+								2
+							)}%`
+					),
+
+			(update) =>
+				update
+					.transition()
+					.duration(750)
+					.attr("cx", (d) => shotXScale(d.SEASON) + shotXScale.bandwidth() / 2)
+					.attr("cy", (d) => shotYScale(d.SHOT_PCT)),
+
+			(exit) => exit.remove()
+		);
+
+	const contestDots = shotChart
+		.selectAll(".contest-dot")
+		.data(processedData, (d) => d.SEASON)
+		.join(
+			(enter) =>
+				enter
+					.append("circle")
+					.attr("class", "contest-dot")
+					.attr("cx", (d) => shotXScale(d.SEASON) + shotXScale.bandwidth() / 2)
+					.attr("cy", (d) => shotYScale(d.CONTEST_PCT))
+					.attr("r", 4)
+					.attr("fill", "orange")
+					.append("title")
+					.text(
+						(d) =>
+							`Year: ${d.SEASON}\nContested Shot Percentage: ${(
+								d.CONTEST_PCT * 100
+							).toFixed(2)}%`
+					),
+
+			(update) =>
+				update
+					.transition()
+					.duration(750)
+					.attr("cx", (d) => shotXScale(d.SEASON) + shotXScale.bandwidth() / 2)
+					.attr("cy", (d) => shotYScale(d.CONTEST_PCT)),
+
+			(exit) => exit.remove()
+		);
+}
+
+function processShotData(data) {
+	return d3
+		.flatGroup(data, (d) => d.SEASON)
+		.map((d) => ({
+			SEASON: d[0],
+			SHOT_PCT:
+				d3.sum(d[1], (e) => e.MADE_3PT) / d3.sum(d[1], (e) => e.ATTEMPTED_3PT),
+			CONTEST_PCT:
+				d3.sum(d[1], (e) => e.CONTESTED_3PT) /
+				d3.sum(d[1], (e) => e.ATTEMPTED_3PT),
+		}));
 }
 
 function drawShotHeatmap(svg, shotsLocData) {
@@ -266,8 +297,10 @@ function drawShotHeatmap(svg, shotsLocData) {
 	drawHeatmap(heatmap, shotsLocData);
 }
 
-function drawEfficiencyChart(svg, efficiencyData) {
-	const efficiencyChart = svg
+let efficiencyXScale, efficiencyYScale;
+
+async function drawEfficiencyChart(svg, efficiencyData) {
+	const efficiencyChart = await svg
 		.append("g")
 		.attr("id", "efficiency_chart")
 		.attr(
@@ -277,40 +310,79 @@ function drawEfficiencyChart(svg, efficiencyData) {
 			})`
 		);
 
-	const processedData = efficiencyData.map((d) => ({
+	const allData = efficiencyData.map((d) => ({
 		X_ID: d.X_ID,
 		SEASON: d.SEASON,
 		SHOT_PCT: d.MADE_3PT / d.ATTEMPTED_3PT,
 		CONTEST_PCT: d.CONTESTED_3PT / d.ATTEMPTED_3PT,
 	}));
 
-	const xScale = d3
+	efficiencyXScale = d3
 		.scaleLinear()
-		.domain([0, d3.max(processedData, (d) => d.SHOT_PCT)])
+		.domain([0, d3.max(allData, (d) => d.SHOT_PCT)])
 		.nice()
 		.range([0, DEFAULT_CHART_WIDTH]);
 
-	const yScale = d3
+	efficiencyYScale = d3
 		.scaleLinear()
-		.domain([0, d3.max(processedData, (d) => d.CONTEST_PCT)])
+		.domain([0, d3.max(allData, (d) => d.CONTEST_PCT)])
 		.nice()
 		.range([DEFAULT_CHART_HEIGHT, 0]);
 
-	efficiencyChart
-		.selectAll("circle")
-		.data(processedData)
-		.enter()
-		.append("circle")
-		.attr("cx", (d) => xScale(d.SHOT_PCT))
-		.attr("cy", (d) => yScale(d.CONTEST_PCT))
-		.attr("r", 4)
-		.attr("fill", "steelblue")
+	drawAxesAndLabels(
+		efficiencyChart,
+		"Shot Efficiency vs Contest Percentage",
+		efficiencyXScale,
+		efficiencyYScale,
+		"Shot Efficiency",
+		"Contest Percentage"
+	);
+
+	updateEfficiencyChart(efficiencyData);
+}
+
+function updateEfficiencyChart(filteredData) {
+	const efficiencyChart = d3.select("#efficiency_chart");
+
+	const processedData = filteredData.map((d) => ({
+		X_ID: d.X_ID,
+		SEASON: d.SEASON,
+		SHOT_PCT: d.MADE_3PT / d.ATTEMPTED_3PT,
+		CONTEST_PCT: d.CONTESTED_3PT / d.ATTEMPTED_3PT,
+	}));
+
+	const dots = efficiencyChart
+		.selectAll(".efficiency-dot")
+		.data(processedData, (d) => d.X_ID)
+		.join(
+			(enter) =>
+				enter
+					.append("circle")
+					.attr("class", "efficiency-dot")
+					.attr("cx", (d) => efficiencyXScale(d.SHOT_PCT))
+					.attr("cy", (d) => efficiencyYScale(d.CONTEST_PCT))
+					.attr("r", 4)
+					.attr("fill", "steelblue"),
+
+			(update) =>
+				update
+					.transition()
+					.duration(750)
+					.attr("cx", (d) => efficiencyXScale(d.SHOT_PCT))
+					.attr("cy", (d) => efficiencyYScale(d.CONTEST_PCT)),
+
+			(exit) => exit.transition().duration(750).attr("r", 0).remove()
+		);
+
+	dots
 		.on("mouseover", function (event, d) {
 			d3.select(this).attr("stroke", "#333").attr("stroke-width", 2);
 		})
-		.on("mouseout", function (d) {
+		.on("mouseout", function () {
 			d3.select(this).attr("stroke", null);
-		})
+		});
+
+	dots
 		.append("title")
 		.text(
 			(d) =>
@@ -320,15 +392,6 @@ function drawEfficiencyChart(svg, efficiencyData) {
 					2
 				)}%`
 		);
-
-	drawAxesAndLabels(
-		efficiencyChart,
-		"Shot Efficiency vs Contest Percentage",
-		xScale,
-		yScale,
-		"Shot Efficiency",
-		"Contest Percentage"
-	);
 }
 
 function drawHeatmap(court, shotsLocData) {
@@ -620,6 +683,27 @@ function drawCourtOutline(court) {
 }
 
 /*--Utility Functions--*/
+
+function updateCharts(selectedId) {
+	const isTeam = window.data.teams.some((t) => t.id === selectedId);
+	const isPlayer = window.data.players.some((p) => p.id === selectedId);
+
+	let filteredData;
+	if (isTeam) {
+		filteredData = window.data.shots_contested.filter(
+			(d) => d.X_ID === parseInt(selectedId)
+		);
+	} else if (isPlayer) {
+		filteredData = window.data.shots_contested.filter(
+			(d) => d.X_ID === parseInt(selectedId)
+		);
+	} else {
+		filteredData = window.data.shots_contested;
+	}
+
+	updateEfficiencyChart(filteredData);
+	updateShotChart(filteredData);
+}
 
 // General function to draw axes, labels, and title
 function drawAxesAndLabels(chart, titleText, xScale, yScale, xLabel, yLabel) {
