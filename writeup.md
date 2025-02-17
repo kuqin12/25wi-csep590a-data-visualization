@@ -52,6 +52,7 @@ This provides detailed information without cluttering the charts
 Data Sources
 - https://www.nba.com/stats
 - https://github.com/swar/nba_api
+- https://github.com/shufinskiy/nba_data
 
 #### Development Process
 The development of NBA Shot Insights: Trends, Efficiency & Court Hotspots was a collaborative effort between Kun and James, with work divided based on data preparation, initial implementation, and final refinements. We collaborated asynchronously to work as both of us had time. 

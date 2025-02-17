@@ -831,7 +831,9 @@ function drawAxesAndLabels(chart, titleText, xScale, yScale, xLabel, yLabel) {
 		.attr("transform", `translate(0,${DEFAULT_CHART_HEIGHT})`)
 		.call(d3.axisBottom(xScale).ticks(5));
 
-	chart.append("g").call(d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".0%")));
+	chart
+		.append("g")
+		.call(d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".0%")));
 
 	chart
 		.append("text")
