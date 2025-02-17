@@ -78,7 +78,8 @@ The project took approximately () hours in total
 
 Challenges
 1. Data Cleaning & Preprocessing
-    - (Kun to add)
+    - Although all data were queried through nba.com/stats, datasets from various subsections (e.g., hustle vs. NBA league) might have been collected using different methods. Thus, we need to handle discrepancies between these datasets.
+    - Some datasets were summarized and pre-aggregated offline to reduce the amount of data needed to be fetched during the initial visualization.
 2. Interactivity
     - Given the large dataset, we needed to ensure that filtering and rendering of charts was smooth
 3. Layout & Alignment
