@@ -442,13 +442,13 @@ async function drawEfficiencyChart(svg, efficiencyData) {
 
 	efficiencyXScale = d3
 		.scaleLinear()
-		.domain([0, d3.max(allData, (d) => d.SHOT_PCT)])
+		.domain([0, d3.max(allData, (d) => d.CONTEST_PCT)])
 		.nice()
 		.range([0, DEFAULT_CHART_WIDTH]);
 
 	efficiencyYScale = d3
 		.scaleLinear()
-		.domain([0, d3.max(allData, (d) => d.CONTEST_PCT)])
+		.domain([0, d3.max(allData, (d) => d.SHOT_PCT)])
 		.nice()
 		.range([DEFAULT_CHART_HEIGHT, 0]);
 
@@ -457,8 +457,8 @@ async function drawEfficiencyChart(svg, efficiencyData) {
 		"3PT Shooting Efficiency vs Defensive Pressure",
 		efficiencyXScale,
 		efficiencyYScale,
-		"3PT Shooting Efficiency Percentage",
 		"Defensive Pressure Percentage",
+		"3PT Shooting Efficiency Percentage",
 		true
 	);
 
@@ -483,8 +483,8 @@ function updateEfficiencyChart(filteredData) {
 				enter
 					.append("circle")
 					.attr("class", "efficiency-dot")
-					.attr("cx", (d) => efficiencyXScale(d.SHOT_PCT))
-					.attr("cy", (d) => efficiencyYScale(d.CONTEST_PCT))
+					.attr("cx", (d) => efficiencyXScale(d.CONTEST_PCT))
+					.attr("cy", (d) => efficiencyYScale(d.SHOT_PCT))
 					.attr("r", 4)
 					.attr("fill", "steelblue")
 					.call((enter) =>
@@ -519,8 +519,8 @@ function updateEfficiencyChart(filteredData) {
 				update
 					.transition()
 					.duration(750)
-					.attr("cx", (d) => efficiencyXScale(d.SHOT_PCT))
-					.attr("cy", (d) => efficiencyYScale(d.CONTEST_PCT))
+					.attr("cx", (d) => efficiencyXScale(d.CONTEST_PCT))
+					.attr("cy", (d) => efficiencyYScale(d.SHOT_PCT))
 					.selection()
 					.each(function (d) {
 						const player = window.data.players.find(
@@ -620,6 +620,7 @@ function updateEfficiencyChart(filteredData) {
 			(exit) => exit.remove()
 		);
 }
+
 let heatmapXScale, heatmapYScale;
 
 function drawHeatmap(court, shotsLocData) {
@@ -1096,24 +1097,24 @@ function debounce(func, wait) {
 
 function computeLinearRegression(data) {
 	const n = data.length;
-	const sumX = d3.sum(data, (d) => d.SHOT_PCT);
-	const sumY = d3.sum(data, (d) => d.CONTEST_PCT);
+	const sumX = d3.sum(data, (d) => d.CONTEST_PCT);
+	const sumY = d3.sum(data, (d) => d.SHOT_PCT);
 	const sumXY = d3.sum(data, (d) => d.SHOT_PCT * d.CONTEST_PCT);
-	const sumX2 = d3.sum(data, (d) => d.SHOT_PCT ** 2);
+	const sumX2 = d3.sum(data, (d) => d.CONTEST_PCT ** 2);
 
 	const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX ** 2);
 	const intercept = (sumY - slope * sumX) / n;
 
-	const minX = d3.min(data, (d) => d.SHOT_PCT);
-	const maxX = d3.max(data, (d) => d.SHOT_PCT);
+	const minX = d3.min(data, (d) => d.CONTEST_PCT);
+	const maxX = d3.max(data, (d) => d.CONTEST_PCT);
 	const regressionData = [
 		[minX, slope * minX + intercept],
 		[maxX, slope * maxX + intercept],
 	];
 
     // Calculate R-squared
-    const ssTotal = d3.sum(data, (d) => (d.CONTEST_PCT - d3.mean(data, (d) => d.CONTEST_PCT)) ** 2);
-    const ssReg = d3.sum(data, (d) => (d.CONTEST_PCT - (slope * d.SHOT_PCT + intercept)) ** 2);
+    const ssTotal = d3.sum(data, (d) => (d.SHOT_PCT - d3.mean(data, (d) => d.SHOT_PCT)) ** 2);
+    const ssReg = d3.sum(data, (d) => (d.SHOT_PCT - (slope * d.CONTEST_PCT + intercept)) ** 2);
 
 	return {
 		regressionData,
