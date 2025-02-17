@@ -572,6 +572,8 @@ function drawHeatmapLegend(svg, colorScale, minPct, maxPct) {
 		.attr("x", 0)
 		.attr("y", LEGEND_HEIGHT + 15)
 		.attr("text-anchor", "start")
+		.attr("fill", "black")
+		.attr("stroke", "none")
 		.text(`${(minPct * 100).toFixed(1)}%`);
 
 	legend
@@ -579,6 +581,8 @@ function drawHeatmapLegend(svg, colorScale, minPct, maxPct) {
 		.attr("x", LEGEND_WIDTH)
 		.attr("y", LEGEND_HEIGHT + 15)
 		.attr("text-anchor", "end")
+		.attr("fill", "black")
+		.attr("stroke", "none")
 		.text(`${(maxPct * 100).toFixed(1)}%`);
 
 	legend
