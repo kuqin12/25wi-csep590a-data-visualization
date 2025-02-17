@@ -142,10 +142,10 @@ function drawSelector(svg) {
 		.attr(
 			"style",
 			`
-			width: 80%; 
+			width: 80%;
             height: 30px;
             font-size: 14px;
-            padding: 5px; 
+            padding: 5px;
             border: 1px solid #ccc;
             border-radius: 5px;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
@@ -305,12 +305,15 @@ function updateShotChart(filteredData) {
 					.attr("cy", (d) => shotYScale(d.SHOT_PCT))
 					.attr("r", 4)
 					.attr("fill", "steelblue")
-					.append("title")
-					.text(
-						(d) =>
-							`Year: ${d.SEASON}\nShot Percentage: ${(d.SHOT_PCT * 100).toFixed(
-								2
-							)}%`
+					.call((enter) =>
+						enter
+							.append("title")
+							.text(
+								(d) =>
+									`Year: ${d.SEASON}\nShot Percentage: ${(
+										d.SHOT_PCT * 100
+									).toFixed(2)}%`
+							)
 					),
 
 			(update) =>
@@ -344,12 +347,15 @@ function updateShotChart(filteredData) {
 					.attr("cy", (d) => shotYScale(d.CONTEST_PCT))
 					.attr("r", 4)
 					.attr("fill", "orange")
-					.append("title")
-					.text(
-						(d) =>
-							`Year: ${d.SEASON}\nContested Shot Percentage: ${(
-								d.CONTEST_PCT * 100
-							).toFixed(2)}%`
+					.call((enter) =>
+						enter
+							.append("title")
+							.text(
+								(d) =>
+									`Year: ${d.SEASON}\nContested Shot Percentage: ${(
+										d.CONTEST_PCT * 100
+									).toFixed(2)}%`
+							)
 					),
 
 			(update) =>
@@ -447,8 +453,9 @@ async function drawEfficiencyChart(svg, efficiencyData) {
 		"Shot Efficiency vs Defensive Pressure",
 		efficiencyXScale,
 		efficiencyYScale,
-		"Shot Efficiency",
-		"Contest Percentage"
+		"Shot Efficiency Percentage",
+		"Defensive Pressure Percentage",
+		true
 	);
 
 	updateEfficiencyChart(efficiencyData);
@@ -475,14 +482,46 @@ function updateEfficiencyChart(filteredData) {
 					.attr("cx", (d) => efficiencyXScale(d.SHOT_PCT))
 					.attr("cy", (d) => efficiencyYScale(d.CONTEST_PCT))
 					.attr("r", 4)
-					.attr("fill", "steelblue"),
+					.attr("fill", "steelblue")
+					.call((enter) =>
+						enter
+							.append("title")
+							.text(
+								(d) => {
+									const player = window.data.players.find((p) => parseInt(p.id) === d.X_ID);
+									const team = window.data.teams.find((t) => parseInt(t.id) === d.X_ID);
+									return player
+										? `Player: ${player.full_name}\nSeason: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
+										: team
+										? `Team: ${team.full_name}\nSeason: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
+										: `Season: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`;
+								}
+							)
+					),
 
 			(update) =>
 				update
 					.transition()
 					.duration(750)
 					.attr("cx", (d) => efficiencyXScale(d.SHOT_PCT))
-					.attr("cy", (d) => efficiencyYScale(d.CONTEST_PCT)),
+					.attr("cy", (d) => efficiencyYScale(d.CONTEST_PCT))
+					.selection()
+					.each(function (d) {
+						const player = window.data.players.find((p) => parseInt(p.id) === d.X_ID);
+						const team = window.data.teams.find((t) => parseInt(t.id) === d.X_ID);
+
+						const id_str = player
+										? `Player: ${player.full_name}\nSeason: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
+										: team
+										? `Team: ${team.full_name}\nSeason: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
+										: `Season: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`;
+
+						d3.select(this)
+							.select("title")
+							.text(
+								id_str
+							);
+					}),
 
 			(exit) => exit.transition().duration(750).attr("r", 0).remove()
 		);
@@ -495,19 +534,6 @@ function updateEfficiencyChart(filteredData) {
 			d3.select(this).attr("stroke", null);
 		});
 
-    // add a title to the dots, look up the X_ID in the players and teams data
-    // and add the name to the title
-    dots
-        .append("title")
-        .text((d) => {
-            const player = window.data.players.find((p) => parseInt(p.id) === d.X_ID);
-            const team = window.data.teams.find((t) => parseInt(t.id) === d.X_ID);
-            return player
-                ? `Player: ${player.full_name}\nSeason: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
-                : team
-                ? `Team: ${team.full_name}\nSeason: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
-                : `Season: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`;
-        });
 }
 let heatmapXScale, heatmapYScale;
 
@@ -562,45 +588,58 @@ function updateHeatmap(filteredData) {
 
 	const hexagons = court
 		.selectAll(".hexagon")
-		.data(bins, (d) => `${d.x}-${d.y}`);
+		.data(bins, (d) => `${d.x}-${d.y}`)
+		.join(
+			(enter) =>
+				enter
+					.append("path")
+					.attr("class", "hexagon")
+					.attr("d", window.hexbinGenerator.hexagon())
+					.attr("transform", (d) => `translate(${d.x},${d.y})`)
+					.attr("fill", (d) => colorScale(d.pct))
+					.attr("stroke", "white")
+					.attr("opacity", 0)
+					.call((enter) =>
+						enter.transition().duration(500).attr("opacity", 0.7)
+					)
+					.call((enter) =>
+						enter
+							.append("title")
+							.text(
+								(d) =>
+									`Shot Percentage: ${(d.pct * 100).toFixed(2)}%\nAttempts: ${
+										d.length
+									}`
+							)
+					),
+
+			(update) =>
+				update
+					.transition()
+					.duration(500)
+					.attr("transform", (d) => `translate(${d.x},${d.y})`)
+					.attr("fill", (d) => colorScale(d.pct))
+					.selection()
+					.each(function (d) {
+						d3.select(this)
+							.select("title")
+							.text(
+								`Shot Percentage: ${(d.pct * 100).toFixed(2)}%\nAttempts: ${
+									d.length
+								}`
+							);
+					}),
+
+			(exit) => exit.transition().duration(500).attr("opacity", 0).remove()
+		);
 
 	hexagons
-		.enter()
-		.append("path")
-		.attr("class", "hexagon")
-		.attr("d", window.hexbinGenerator.hexagon())
-		.attr("transform", (d) => `translate(${d.x},${d.y})`)
-		.attr("fill", (d) => colorScale(d.pct))
-		.attr("stroke", "white")
-		.attr("opacity", 0)
-		.transition()
-		.duration(500)
-		.attr("opacity", 0.7);
-
-	hexagons
-		.transition()
-		.duration(500)
-		.attr("transform", (d) => `translate(${d.x},${d.y})`)
-		.attr("fill", (d) => colorScale(d.pct));
-
-	hexagons.exit().transition().duration(500).attr("opacity", 0).remove();
-
-	court
-		.selectAll(".hexagon")
 		.on("mouseover", function (event, d) {
 			d3.select(this).attr("stroke", "#333").attr("stroke-width", 2);
 		})
 		.on("mouseout", function () {
 			d3.select(this).attr("stroke", "white");
 		});
-
-	court
-		.selectAll(".hexagon")
-		.append("title")
-		.text(
-			(d) =>
-				`Shot Percentage: ${(d.pct * 100).toFixed(2)}%\nAttempts: ${d.length}`
-		);
 
 	drawHeatmapLegend(court, colorScale, minPct, maxPct);
 }
@@ -891,11 +930,26 @@ function updateCharts(selectedId, isYear = false) {
 }
 
 // General function to draw axes, labels, and title
-function drawAxesAndLabels(chart, titleText, xScale, yScale, xLabel, yLabel) {
-	chart
-		.append("g")
-		.attr("transform", `translate(0,${DEFAULT_CHART_HEIGHT})`)
-		.call(d3.axisBottom(xScale).ticks(5));
+function drawAxesAndLabels(
+	chart,
+	titleText,
+	xScale,
+	yScale,
+	xLabel,
+	yLabel,
+	isPercent
+) {
+	if (isPercent) {
+		chart
+			.append("g")
+			.attr("transform", `translate(0,${DEFAULT_CHART_HEIGHT})`)
+			.call(d3.axisBottom(xScale).ticks(5).tickFormat(d3.format(".0%")));
+	} else {
+		chart
+			.append("g")
+			.attr("transform", `translate(0,${DEFAULT_CHART_HEIGHT})`)
+			.call(d3.axisBottom(xScale).ticks(5));
+	}
 
 	chart
 		.append("g")
