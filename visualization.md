@@ -530,6 +530,15 @@ function updateHeatmap(filteredData) {
 
 	court
 		.selectAll(".hexagon")
+		.on("mouseover", function (event, d) {
+			d3.select(this).attr("stroke", "#333").attr("stroke-width", 2);
+		})
+		.on("mouseout", function () {
+			d3.select(this).attr("stroke", "white");
+		});
+
+	court
+		.selectAll(".hexagon")
 		.append("title")
 		.text(
 			(d) =>
