@@ -77,12 +77,15 @@ function drawSelector(svg) {
 		.append("g")
 		.attr(
 			"transform",
-			`translate(${DEFAULT_CHART_WIDTH + COURT_WIDTH}, ${MARGIN.top})`
+			`translate(${VIEW_WIDTH - SEARCH_WIDTH - MARGIN.right}, ${
+				MARGIN.top / 2
+			})`
 		);
 	const foreignObject = selectorGroup
 		.append("foreignObject")
 		.attr("width", SEARCH_WIDTH)
-		.attr("height", SEARCH_HEIGHT);
+		.attr("height", SEARCH_HEIGHT)
+		.style("position", "relative");
 	const body = foreignObject
 		.append("xhtml:body")
 		.style("margin", "5px")
@@ -92,7 +95,18 @@ function drawSelector(svg) {
 		.append("input")
 		.attr("type", "text")
 		.attr("id", "autocomplete-input")
-		.attr("style", "width: 90%; height: 100%;")
+		.attr(
+			"style",
+			`
+			width: 80%; 
+            height: 30px;
+            font-size: 14px;
+            padding: 5px; 
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+			`
+		)
 		.attr("placeholder", "Search for a team or player")
 		.on("input", debounce(handleSearchInput, 300));
 
@@ -149,7 +163,7 @@ async function drawShotChart(svg, shotData) {
 
 	drawAxesAndLabels(
 		shotChart,
-		"Shot Percentage and Contested Percentage Over Seasons",
+		"Shooting Trends Over the Seasons",
 		shotXScale,
 		shotYScale,
 		"Seasons",
@@ -288,10 +302,19 @@ async function drawShotHeatmap(svg, shotsLocData) {
 		.attr("id", "court_chart")
 		.attr(
 			"transform",
-			`translate(${
-				DEFAULT_CHART_WIDTH + MARGIN.left + MARGIN.left + MARGIN.left
-			}, ${DEFAULT_CHART_HEIGHT})`
+			`translate(${(VIEW_WIDTH - USABLE_WIDTH) / 2}, ${DEFAULT_CHART_HEIGHT})`
 		);
+
+	heatmap
+		.append("text")
+		.attr("x", USABLE_WIDTH / 2)
+		.attr("y", -MARGIN.top / 2)
+		.attr("text-anchor", "middle")
+		.attr("font-size", "16px")
+		.attr("font-weight", "bold")
+		.attr("stroke", "none")
+		.attr("fill", "black")
+		.text("Shot Hotspots Across the Court");
 
 	drawCourtOutline(heatmap);
 	drawHeatmap(heatmap, shotsLocData);
@@ -331,7 +354,7 @@ async function drawEfficiencyChart(svg, efficiencyData) {
 
 	drawAxesAndLabels(
 		efficiencyChart,
-		"Shot Efficiency vs Contest Percentage",
+		"Shot Efficiency vs Defensive Pressure",
 		efficiencyXScale,
 		efficiencyYScale,
 		"Shot Efficiency",
@@ -521,6 +544,15 @@ function drawHeatmapLegend(svg, colorScale, minPct, maxPct) {
 		.attr("y", LEGEND_HEIGHT + 15)
 		.attr("text-anchor", "end")
 		.text(`${(maxPct * 100).toFixed(1)}%`);
+
+	legend
+		.append("text")
+		.attr("x", LEGEND_WIDTH / 2)
+		.attr("y", -5)
+		.attr("text-anchor", "middle")
+		.attr("fill", "black")
+		.attr("stroke", "none")
+		.text("Shot Accuracy %");
 }
 
 function renderLogo(svg) {
@@ -750,6 +782,8 @@ function drawAxesAndLabels(chart, titleText, xScale, yScale, xLabel, yLabel) {
 		.attr("x", DEFAULT_CHART_WIDTH / 2)
 		.attr("y", -MARGIN.top / 2)
 		.attr("text-anchor", "middle")
+		.attr("font-size", "16px")
+		.attr("font-weight", "bold")
 		.text(titleText);
 
 	chart
