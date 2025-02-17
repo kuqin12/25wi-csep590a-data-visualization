@@ -63,6 +63,15 @@ function init() {
 		.attr("viewBox", [0, 0, VIEW_WIDTH, VIEW_HEIGHT])
 		.style("font-family", '"Open Sans", sans-serif');
 
+	svg
+		.append("text")
+		.attr("x", VIEW_WIDTH / 2)
+		.attr("y", MARGIN.top / 2)
+		.attr("text-anchor", "middle")
+		.attr("font-size", "24px")
+		.attr("font-weight", "bold")
+		.text("NBA Shot Insights: Trends, Efficiency & Court Hotspots");
+
 	drawSelector(svg);
 	drawShotChart(svg, window.data.shots_contested);
 	drawEfficiencyChart(svg, window.data.shots_contested);
@@ -147,7 +156,7 @@ async function drawShotChart(svg, shotData) {
 	const shotChart = await svg
 		.append("g")
 		.attr("id", "shot_chart")
-		.attr("transform", `translate(${MARGIN.left}, ${MARGIN.top})`);
+		.attr("transform", `translate(${MARGIN.left}, ${MARGIN.top + MARGIN.top})`);
 	const allData = processShotData(shotData);
 	shotXScale = d3
 		.scaleBand()
@@ -329,7 +338,7 @@ async function drawEfficiencyChart(svg, efficiencyData) {
 		.attr(
 			"transform",
 			`translate(${MARGIN.left}, ${
-				DEFAULT_CHART_HEIGHT + MARGIN.top + MARGIN.top + MARGIN.top
+				DEFAULT_CHART_HEIGHT + MARGIN.top + MARGIN.top + MARGIN.top + MARGIN.top
 			})`
 		);
 
