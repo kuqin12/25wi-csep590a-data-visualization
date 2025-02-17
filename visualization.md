@@ -282,8 +282,8 @@ function processShotData(data) {
 		}));
 }
 
-function drawShotHeatmap(svg, shotsLocData) {
-	const heatmap = svg
+async function drawShotHeatmap(svg, shotsLocData) {
+	const heatmap = await svg
 		.append("g")
 		.attr("id", "court_chart")
 		.attr(
@@ -393,13 +393,14 @@ function updateEfficiencyChart(filteredData) {
 				)}%`
 		);
 }
+let heatmapXScale, heatmapYScale;
 
 function drawHeatmap(court, shotsLocData) {
-	const X_NBA_DATA = d3
+	heatmapXScale = d3
 		.scaleLinear()
 		.range([0, USABLE_WIDTH - COURT_MARGINS * 2])
 		.domain([-250, 250]);
-	const Y_NBA_DATA = d3
+	heatmapYScale = d3
 		.scaleLinear()
 		.range([0, (COURT_HEIGHT - COURT_MARGINS * 2) * 2])
 		.domain([-52, 888]);
@@ -409,12 +410,20 @@ function drawHeatmap(court, shotsLocData) {
 	];
 
 	const hexbin = d3Hexbin()
-		.x((d) => X_NBA_DATA(d.LOC_X))
-		.y((d) => Y_NBA_DATA(d.LOC_Y))
+		.x((d) => heatmapXScale(d.LOC_X))
+		.y((d) => heatmapYScale(d.LOC_Y))
 		.extent(COURT_EXTENT)
 		.radius(4);
-	const bins = hexbin(
-		shotsLocData
+	window.hexbinGenerator = hexbin;
+
+	updateHeatmap(shotsLocData);
+}
+
+function updateHeatmap(filteredData) {
+	const court = d3.select("#court_chart");
+
+	const bins = window.hexbinGenerator(
+		filteredData
 			.filter((d) => d.LOC_Y < 418)
 			.map((d) => ({
 				LOC_X: +d.LOC_X,
@@ -429,32 +438,39 @@ function drawHeatmap(court, shotsLocData) {
 		d.pct = d.total_made / d.length;
 	});
 
-	const maxPct = d3.max(bins, (d) => d.pct);
-	const minPct = d3.min(bins, (d) => d.pct);
+	const maxPct = d3.max(bins, (d) => d.pct) || 1;
+	const minPct = d3.min(bins, (d) => d.pct) || 0;
 	const colorScale = d3
 		.scaleSequential(d3.interpolateRdYlBu)
 		.domain([minPct, maxPct]);
 
 	const hexagons = court
-		.append("g")
-		.selectAll("path")
-		.data(bins)
+		.selectAll(".hexagon")
+		.data(bins, (d) => `${d.x}-${d.y}`);
+
+	hexagons
 		.enter()
 		.append("path")
 		.attr("class", "hexagon")
-		.attr("d", hexbin.hexagon())
+		.attr("d", window.hexbinGenerator.hexagon())
 		.attr("transform", (d) => `translate(${d.x},${d.y})`)
 		.attr("fill", (d) => colorScale(d.pct))
 		.attr("stroke", "white")
-		.attr("opacity", 0.7)
-		.on("mouseover", function (event, d) {
-			d3.select(this).attr("stroke", "#333");
-		})
-		.on("mouseout", function (d) {
-			d3.select(this).attr("stroke", "white");
-		});
+		.attr("opacity", 0)
+		.transition()
+		.duration(500)
+		.attr("opacity", 0.7);
 
 	hexagons
+		.transition()
+		.duration(500)
+		.attr("transform", (d) => `translate(${d.x},${d.y})`)
+		.attr("fill", (d) => colorScale(d.pct));
+
+	hexagons.exit().transition().duration(500).attr("opacity", 0).remove();
+
+	court
+		.selectAll(".hexagon")
 		.append("title")
 		.text(
 			(d) =>
@@ -689,19 +705,27 @@ function updateCharts(selectedId) {
 	const isPlayer = window.data.players.some((p) => p.id === selectedId);
 
 	let filteredData;
+	let filteredShots;
 	let url;
 	if (isTeam) {
 		filteredData = window.data.shots_contested.filter(
 			(d) => d.X_ID === parseInt(selectedId)
+		);
+		filteredShots = window.data.shots_loc.filter(
+			(d) => d.TEAM_ID === parseInt(selectedId)
 		);
 		url = `https://cdn.nba.com/logos/nba/${selectedId}/primary/L/logo.svg`;
 	} else if (isPlayer) {
 		filteredData = window.data.shots_contested.filter(
 			(d) => d.X_ID === parseInt(selectedId)
 		);
+		filteredShots = window.data.shots_loc.filter(
+			(d) => d.PLAYER_ID === parseInt(selectedId)
+		);
 		url = `https://cdn.nba.com/headshots/nba/latest/1040x760/${selectedId}.png`;
 	} else {
 		filteredData = window.data.shots_contested;
+		filteredShots = window.data.shots_loc;
 		url = "https://cdn.nba.com/logos/leagues/logo-nba.svg";
 	}
 
@@ -709,6 +733,7 @@ function updateCharts(selectedId) {
 
 	updateEfficiencyChart(filteredData);
 	updateShotChart(filteredData);
+	updateHeatmap(filteredShots);
 }
 
 // General function to draw axes, labels, and title
