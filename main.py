@@ -123,6 +123,9 @@ if __name__ == "__main__":
     # If so, we will just remove the rows
     df.dropna(inplace=True)
 
+    # Find out all the rows that has CONTESTED_3PT > ATTEMPTED_3PT
+    df = df[df['CONTESTED_3PT'] <= df['ATTEMPTED_3PT']]
+
     # Save the merged dataframe to a CSV file
     if not os.path.exists('x_shot_summary_2014_2024_contested.csv'):
         df.to_csv('x_shot_summary_2014_2024_contested.csv', index=False)
