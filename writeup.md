@@ -19,12 +19,14 @@ Each chart was designed to highlight a different aspect of shooting performance
      - Dual lines allow comparison between general shooting efficiency and defensive contest rate
 2. Shooting Efficiency vs Defensive Pressure
    - Encoding
-     - X-axis: Shooting Efficiency (Quantitative)
-     - Y-axis: Contest Percentage (Quantitative)
+     - X-axis: Contest Percentage (Quantitative)
+     - Y-axis: Shooting Efficiency (Quantitative)
      - Circle Size: Consistent
+     - Regression Line: Red line for trend analysis
    - Rationale
      - A scatter plot is ideal for analyzing correlations
      - This chart allows users to understand if contested shooting significantly impact efficiency
+     - A linear regression line was added to better visualize the relationship between shooting efficiency and defensive pressure
 3. Shooting Hotspots Across the Court
    - Encoding
      - X-axis: Court coordinates of shots (Location)
