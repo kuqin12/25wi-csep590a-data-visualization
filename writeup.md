@@ -33,8 +33,8 @@ Each chart was designed to highlight a different aspect of shooting performance
         - The court outline preserves spatial awareness.
 
 #### Interaction Techniques
-1. Search & Filter by Player / Team  
-Users can quickly explore individual player tendencies or team shooting styles
+1. Search & Filter by Player / Team / Year  
+Users can quickly explore individual player tendencies, team shooting styles, or season
 2. Smooth Transitions for Data Updates  
 This helps maintain visual continuity, preventing sudden jumps in the data
 3. Hover Interactions for Data Tooltips  
@@ -66,7 +66,7 @@ Team Contributions
 - James:
     - Refactored the initial chart implementations and finalized the visualizations.
     - Polished interactive features, including:
-        - Search & filter functionality for players and teams.
+        - Search & filter functionality for players, teams, and year.
         - Smooth transitions for updated data.
     - Designed styling, layout, and UI polish for the final visualization.
 

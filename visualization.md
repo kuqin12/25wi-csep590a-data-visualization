@@ -116,14 +116,36 @@ function drawSelector(svg) {
             box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
 			`
 		)
-		.attr("placeholder", "Search for a team or player")
+		.attr("placeholder", "Search for a team, player, or season")
 		.on("input", debounce(handleSearchInput, 300));
 
 	function handleSearchInput() {
 		const value = input.property("value").toLowerCase();
-		const suggestions = window.data.teams
-			.concat(window.data.players)
-			.filter((d) => d.full_name.toLowerCase().includes(value));
+		if (!value.trim()) {
+			updateCharts(null, false);
+			d3.select("#suggestions").remove();
+			return;
+		}
+		let suggestions = [];
+
+		window.data.teams.forEach((t) => {
+			if (t.full_name.toLowerCase().includes(value)) suggestions.push(t);
+		});
+
+		window.data.players.forEach((p) => {
+			if (p.full_name.toLowerCase().includes(value)) suggestions.push(p);
+		});
+
+		const availableYears = new Set(
+			window.data.shots_contested.map((d) => d.SEASON)
+		);
+		availableYears.forEach((year) => {
+			const yearStr = `Season ${year}`;
+			if (yearStr.toLowerCase().includes(value)) {
+				suggestions.push({ id: `year-${year}`, full_name: yearStr });
+			}
+		});
+
 		showSuggestions(suggestions);
 	}
 
@@ -144,7 +166,12 @@ function drawSelector(svg) {
 				.on("click", () => {
 					input.property("value", suggestion.full_name);
 					d3.select("#suggestions").remove();
-					updateCharts(suggestion.id);
+					if (suggestion.id.startsWith("year-")) {
+						const selectedYear = parseInt(suggestion.id.split("-")[1]);
+						updateCharts(selectedYear, true);
+					} else {
+						updateCharts(suggestion.id, false);
+					}
 				});
 		});
 	}
@@ -571,7 +598,9 @@ function renderLogo(svg) {
 		.attr("id", "auto_chart")
 		.attr(
 			"transform",
-			`translate(${(VIEW_WIDTH - MARGIN.left - MARGIN.right) / 2}, 0)`
+			`translate(${(VIEW_WIDTH - MARGIN.left - MARGIN.right) / 2}, ${
+				MARGIN.top
+			})`
 		)
 		.append("image")
 		.attr(
@@ -741,33 +770,47 @@ function drawCourtOutline(court) {
 
 /*--Utility Functions--*/
 
-function updateCharts(selectedId) {
+function updateCharts(selectedId, isYear = false) {
 	const isTeam = window.data.teams.some((t) => t.id === selectedId);
 	const isPlayer = window.data.players.some((p) => p.id === selectedId);
 
 	let filteredData;
 	let filteredShots;
 	let url;
-	if (isTeam) {
+	if (isYear) {
+		const selectedYear = parseInt(selectedId);
 		filteredData = window.data.shots_contested.filter(
-			(d) => d.X_ID === parseInt(selectedId)
+			(d) => d.SEASON === selectedYear
 		);
 		filteredShots = window.data.shots_loc.filter(
-			(d) => d.TEAM_ID === parseInt(selectedId)
+			(d) => d.SEASON === selectedYear
 		);
-		url = `https://cdn.nba.com/logos/nba/${selectedId}/primary/L/logo.svg`;
-	} else if (isPlayer) {
-		filteredData = window.data.shots_contested.filter(
-			(d) => d.X_ID === parseInt(selectedId)
-		);
-		filteredShots = window.data.shots_loc.filter(
-			(d) => d.PLAYER_ID === parseInt(selectedId)
-		);
-		url = `https://cdn.nba.com/headshots/nba/latest/1040x760/${selectedId}.png`;
+		url = "https://cdn.1min30.com/wp-content/uploads/2018/03/logo-NBA.jpg";
 	} else {
-		filteredData = window.data.shots_contested;
-		filteredShots = window.data.shots_loc;
-		url = "https://cdn.nba.com/logos/leagues/logo-nba.svg";
+		const isTeam = window.data.teams.some((t) => t.id === selectedId);
+		const isPlayer = window.data.players.some((p) => p.id === selectedId);
+
+		if (isTeam) {
+			filteredData = window.data.shots_contested.filter(
+				(d) => d.X_ID === parseInt(selectedId)
+			);
+			filteredShots = window.data.shots_loc.filter(
+				(d) => d.TEAM_ID === parseInt(selectedId)
+			);
+			url = `https://cdn.nba.com/logos/nba/${selectedId}/primary/L/logo.svg`;
+		} else if (isPlayer) {
+			filteredData = window.data.shots_contested.filter(
+				(d) => d.X_ID === parseInt(selectedId)
+			);
+			filteredShots = window.data.shots_loc.filter(
+				(d) => d.PLAYER_ID === parseInt(selectedId)
+			);
+			url = `https://cdn.nba.com/headshots/nba/latest/1040x760/${selectedId}.png`;
+		} else {
+			filteredData = window.data.shots_contested;
+			filteredShots = window.data.shots_loc;
+			url = "https://cdn.1min30.com/wp-content/uploads/2018/03/logo-NBA.jpg";
+		}
 	}
 
 	d3.select("#auto_chart").selectAll("image").attr("xlink:href", url);
