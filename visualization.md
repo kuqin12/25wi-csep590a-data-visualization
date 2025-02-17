@@ -45,8 +45,8 @@ const DEFAULT_CHART_HEIGHT = VIEW_HEIGHT / 2 - MARGIN.top - MARGIN.bottom;
 const COURT_WIDTH = VIEW_WIDTH * 0.4;
 const SEARCH_WIDTH = VIEW_WIDTH * 0.3;
 const SEARCH_HEIGHT = 200;
-const AUTO_WIDTH = 100;
-const AUTO_HEIGHT = 100;
+const AUTO_WIDTH = 150;
+const AUTO_HEIGHT = 150;
 const USABLE_WIDTH = Math.min(500, COURT_WIDTH);
 const COURT_MARGINS = 20;
 const COURT_HEIGHT = (USABLE_WIDTH / 50) * 47;
@@ -689,17 +689,23 @@ function updateCharts(selectedId) {
 	const isPlayer = window.data.players.some((p) => p.id === selectedId);
 
 	let filteredData;
+	let url;
 	if (isTeam) {
 		filteredData = window.data.shots_contested.filter(
 			(d) => d.X_ID === parseInt(selectedId)
 		);
+		url = `https://cdn.nba.com/logos/nba/${selectedId}/primary/L/logo.svg`;
 	} else if (isPlayer) {
 		filteredData = window.data.shots_contested.filter(
 			(d) => d.X_ID === parseInt(selectedId)
 		);
+		url = `https://cdn.nba.com/headshots/nba/latest/1040x760/${selectedId}.png`;
 	} else {
 		filteredData = window.data.shots_contested;
+		url = "https://cdn.nba.com/logos/leagues/logo-nba.svg";
 	}
+
+	d3.select("#auto_chart").selectAll("image").attr("xlink:href", url);
 
 	updateEfficiencyChart(filteredData);
 	updateShotChart(filteredData);
