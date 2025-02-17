@@ -607,11 +607,12 @@ function updateEfficiencyChart(filteredData) {
 				enter
 					.append("text")
 					.attr("class", "regression-equation")
-					.attr("x", DEFAULT_CHART_WIDTH - 150)
+					.attr("x", DEFAULT_CHART_WIDTH - 50)
 					.attr("y", 20)
 					.attr("text-anchor", "end")
 					.attr("font-size", "14px")
-					.attr("fill", "red")
+                    .attr("font-weight", "bold")
+					.attr("fill", "black")
 					.text(equation),
 
 			(update) => update.text(equation),
@@ -1110,9 +1111,13 @@ function computeLinearRegression(data) {
 		[maxX, slope * maxX + intercept],
 	];
 
+    // Calculate R-squared
+    const ssTotal = d3.sum(data, (d) => (d.CONTEST_PCT - d3.mean(data, (d) => d.CONTEST_PCT)) ** 2);
+    const ssReg = d3.sum(data, (d) => (d.CONTEST_PCT - (slope * d.SHOT_PCT + intercept)) ** 2);
+
 	return {
 		regressionData,
-		equation: `y = ${slope.toFixed(2)}x + ${intercept.toFixed(2)}`,
+		equation: `Slope: ${slope.toFixed(2)}, R-squared: ${(1 - ssReg / ssTotal).toFixed(2)}`,
 	};
 }
 ```
