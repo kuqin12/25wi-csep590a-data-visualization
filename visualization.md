@@ -491,9 +491,9 @@ function updateEfficiencyChart(filteredData) {
 									const player = window.data.players.find((p) => parseInt(p.id) === d.X_ID);
 									const team = window.data.teams.find((t) => parseInt(t.id) === d.X_ID);
 									return player
-										? `Player: ${player.full_name}\nSeason: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
+										? `Player: ${player.full_name}\nSeason: ${d.SEASON}\n3PT Shooting Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
 										: team
-										? `Team: ${team.full_name}\nSeason: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
+										? `Team: ${team.full_name}\nSeason: ${d.SEASON}\n3PT Shooting Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
 										: `Season: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`;
 								}
 							)
@@ -511,9 +511,9 @@ function updateEfficiencyChart(filteredData) {
 						const team = window.data.teams.find((t) => parseInt(t.id) === d.X_ID);
 
 						const id_str = player
-										? `Player: ${player.full_name}\nSeason: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
+										? `Player: ${player.full_name}\nSeason: ${d.SEASON}\n3PT Shooting Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
 										: team
-										? `Team: ${team.full_name}\nSeason: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
+										? `Team: ${team.full_name}\nSeason: ${d.SEASON}\n3PT Shooting Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
 										: `Season: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`;
 
 						d3.select(this)
