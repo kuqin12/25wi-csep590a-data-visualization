@@ -71,7 +71,7 @@ Team Contributions
     - Designed styling, layout, and UI polish for the final visualization.
 
 The project took approximately () hours in total
-- Data collection & cleaning - (Kun to add estimate)
+- Data collection & cleaning - 4 hours
 - Initial chart implementation - (Kun to add estimate)
 - Interactivity - 3 hours
 - Final polishing & refactor - 4 hours
