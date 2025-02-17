@@ -5,7 +5,7 @@ toc: false
 
 # Interactive Visualization Submission
 
-```js echo
+```js
 async function loadData() {
 	const BASE_URL =
 		"https://media.githubusercontent.com/media/kuqin12/25wi-csep590a-data-visualization/refs/heads/main/";
@@ -36,7 +36,7 @@ loadData().then((data) => {
 });
 ```
 
-```js echo
+```js
 const VIEW_WIDTH = 1500;
 const VIEW_HEIGHT = 700;
 const MARGIN = { top: 50, right: 50, bottom: 80, left: 80 };
