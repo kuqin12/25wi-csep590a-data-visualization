@@ -5,7 +5,7 @@ toc: false
 
 # Interactive Visualization Submission
 
-```js echo
+```js
 async function loadData() {
 	const BASE_URL =
 		"https://media.githubusercontent.com/media/kuqin12/25wi-csep590a-data-visualization/refs/heads/main/";
@@ -29,14 +29,49 @@ async function loadData() {
 	return { players, teams, shots_contested, shots_loc };
 }
 
+// Function to create and show the loader
+function showLoader() {
+    const loader = document.createElement('div');
+    loader.id = 'loader';
+    loader.style.position = 'fixed';
+    loader.style.left = '50%';
+    loader.style.top = '50%';
+    loader.style.transform = 'translate(-50%, -50%)';
+    loader.style.border = '16px solid #f3f3f3';
+    loader.style.borderTop = '16px solid #3498db';
+    loader.style.borderRadius = '50%';
+    loader.style.width = '120px';
+    loader.style.height = '120px';
+    loader.style.animation = 'spin 2s linear infinite';
+
+    const style = document.createElement('style');
+    style.type = 'text/css';
+    style.innerHTML = `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`;
+    document.getElementsByTagName('head')[0].appendChild(style);
+
+    document.body.appendChild(loader);
+}
+
+// Function to hide and remove the loader
+function hideLoader() {
+    const loader = document.getElementById('loader');
+    if (loader) {
+        loader.parentNode.removeChild(loader);
+    }
+}
+
+// Show the loader before loading the CSV file
+showLoader();
+
 loadData().then((data) => {
 	console.log("Data Loaded:", data);
 	window.data = data;
+    hideLoader();
 	init();
 });
 ```
 
-```js echo
+```js
 const VIEW_WIDTH = 1500;
 const VIEW_HEIGHT = 700;
 const MARGIN = { top: 50, right: 50, bottom: 80, left: 80 };
@@ -460,16 +495,19 @@ function updateEfficiencyChart(filteredData) {
 			d3.select(this).attr("stroke", null);
 		});
 
-	dots
-		.append("title")
-		.text(
-			(d) =>
-				`ID: ${d.X_ID}\nYear: ${d.SEASON}\nShot Percentage: ${(
-					d.SHOT_PCT * 100
-				).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(
-					2
-				)}%`
-		);
+    // add a title to the dots, look up the X_ID in the players and teams data
+    // and add the name to the title
+    dots
+        .append("title")
+        .text((d) => {
+            const player = window.data.players.find((p) => parseInt(p.id) === d.X_ID);
+            const team = window.data.teams.find((t) => parseInt(t.id) === d.X_ID);
+            return player
+                ? `Player: ${player.full_name}\nSeason: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
+                : team
+                ? `Team: ${team.full_name}\nSeason: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`
+                : `Season: ${d.SEASON}\nShot Efficiency: ${(d.SHOT_PCT * 100).toFixed(2)}%\nContest Percentage: ${(d.CONTEST_PCT * 100).toFixed(2)}%`;
+        });
 }
 let heatmapXScale, heatmapYScale;
 
