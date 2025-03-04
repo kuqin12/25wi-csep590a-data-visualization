@@ -45,6 +45,8 @@ if __name__ == "__main__":
     pbdb_df = pbdb_df[['occurrence_no', 'reference_no', 'primary_name', 'primary_reso', 'subgenus_name', 'subgenus_reso', 'species_name', 'species_reso']]
     # join the two dataframes on the occurrence_no, drop the entries with no match in occurence_df
     occurence_df = occurence_df.merge(pbdb_df, on='occurrence_no', how='inner')
+    # sort the dataframe by min_ma, then by max_ma
+    occurence_df.sort_values(by=['min_ma', 'max_ma'], inplace=True)
     # print the shape
     print(occurence_df.shape)
     # print the first 5 rows
